@@ -1,0 +1,14 @@
+{
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "lint": "prettier --write 'src/**/*.ts'"
+  },
+  "dependencies": {
+    "pandoc-filter": "^2.2.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.1",
+    "typescript": "^5.4.5"
+  }
+}
