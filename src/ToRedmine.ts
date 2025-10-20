@@ -8,7 +8,14 @@ function action(
   meta: PandocMetaMap
 ): Promise<AnyElt | Array<AnyElt> | void> | AnyElt | Array<AnyElt> | void {
   if (elem.t === 'CodeBlock') {
-    const [[, lang], code] = elem.c;
+    const [[_, langOrig], code] = elem.c;
+    let lang = langOrig;
+
+    // Workaround: remove language if code contains HTML pre tag
+    // Redmine has issues with nested pre tags
+    if (code.includes('<pre>')) {
+      lang = [];
+    }
     const syntax = lang.length ? ` class="${lang}"` : '';
     // const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     if (`${lang}` === 'plantuml') {
