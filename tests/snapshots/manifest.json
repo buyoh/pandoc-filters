@@ -1,0 +1,14 @@
+[
+  {
+    "input": "custom001-inlinecode.md",
+    "output": "custom001-inlinecode.textile",
+    "input_type": "markdown",
+    "output_type": "textile"
+  },
+  {
+    "input": "custom002-blockcode.md",
+    "output": "custom002-blockcode.textile",
+    "input_type": "markdown",
+    "output_type": "textile"
+  }
+]

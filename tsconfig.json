@@ -8,7 +8,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": false,
-    // "esModuleInterop": true,
+    "esModuleInterop": true,
     "module": "CommonJS",
     "moduleResolution": "node",
     // "resolveJsonModule": true,
@@ -23,5 +23,6 @@
   ],
   "include": [
     "src/**/*.ts",
+    "tests/**/*.ts"
   ]
 }

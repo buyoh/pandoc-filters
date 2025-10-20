@@ -1,0 +1,19 @@
+<pre><code>
+simple
+block</code></pre>
+
+<pre><code class="html">
+<div>
+  html
+</div></code></pre>
+
+<pre><code>
+<pre>
+  preformatted
+</pre></code></pre>
+
+{{plantuml
+@startuml
+Alice -> Bob: send
+@enduml
+}}
