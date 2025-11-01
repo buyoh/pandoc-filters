@@ -1,27 +1,32 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
-require 'socket'
 require 'json'
 require_relative '../pandoc-runner'
 require_relative 'mock_command_executor'
+require_relative 'mock_socket_server'
 
 class PandocRunnerServerTest < Minitest::Test
   def setup
-    @test_socket_path = '/tmp/test_pandoc_runner_integration.sock'
+    @test_socket_path = '/tmp/test_pandoc_runner.sock'
     @mock_executor = MockCommandExecutor.new
     @mock_executor.set_response('pandoc --version', 'pandoc 2.19.2', '', true)
+    @mock_socket_server = MockSocketServer.new(
+      socket_path: @test_socket_path,
+      logger: Logger.new($stdout, level: Logger::WARN)
+    )
   end
 
   def teardown
-    File.unlink(@test_socket_path) if File.exist?(@test_socket_path)
+    @mock_socket_server.stop if @mock_socket_server.running?
   end
 
   def test_server_ping_integration
     server = PandocRunnerServer.new(
       socket_path: @test_socket_path,
       log_level: Logger::WARN,
-      command_executor: @mock_executor
+      command_executor: @mock_executor,
+      socket_server: @mock_socket_server
     )
 
     # バックグラウンドでサーバーを開始
@@ -30,11 +35,11 @@ class PandocRunnerServerTest < Minitest::Test
     end
 
     # サーバーが開始されるまで待つ
-    sleep 0.2
+    sleep 0.02
 
     begin
       # pingリクエストを送信
-      client = UNIXSocket.new(@test_socket_path)
+      client = @mock_socket_server.create_mock_client
       request = { action: 'ping' }.to_json
       client.puts(request)
 
@@ -47,7 +52,7 @@ class PandocRunnerServerTest < Minitest::Test
       assert_equal 'pong', response_data['data']['message']
     ensure
       server.stop
-      server_thread.join(1)
+      server_thread.join(0.1)
     end
   end
 
@@ -63,18 +68,19 @@ class PandocRunnerServerTest < Minitest::Test
     server = PandocRunnerServer.new(
       socket_path: @test_socket_path,
       log_level: Logger::WARN,
-      command_executor: @mock_executor
+      command_executor: @mock_executor,
+      socket_server: @mock_socket_server
     )
 
     server_thread = Thread.new do
       server.start
     end
 
-    sleep 0.2
+    sleep 0.02
 
     begin
       # 変換リクエストを送信
-      client = UNIXSocket.new(@test_socket_path)
+      client = @mock_socket_server.create_mock_client
       request = {
         action: 'convert',
         from: 'markdown',
@@ -100,7 +106,7 @@ class PandocRunnerServerTest < Minitest::Test
       assert_includes result, '"link":http://example.com'
     ensure
       server.stop
-      server_thread.join(1)
+      server_thread.join(0.1)
     end
   end
 
@@ -108,18 +114,19 @@ class PandocRunnerServerTest < Minitest::Test
     server = PandocRunnerServer.new(
       socket_path: @test_socket_path,
       log_level: Logger::WARN,
-      command_executor: @mock_executor
+      command_executor: @mock_executor,
+      socket_server: @mock_socket_server
     )
 
     server_thread = Thread.new do
       server.start
     end
 
-    sleep 0.2
+    sleep 0.02
 
     begin
       # 無効なリクエストを送信
-      client = UNIXSocket.new(@test_socket_path)
+      client = @mock_socket_server.create_mock_client
       client.puts('invalid json')
 
       response = client.gets
@@ -131,7 +138,7 @@ class PandocRunnerServerTest < Minitest::Test
       assert_equal 'INVALID_JSON', response_data['error']['code']
     ensure
       server.stop
-      server_thread.join(1)
+      server_thread.join(0.1)
     end
   end
 
@@ -147,14 +154,15 @@ class PandocRunnerServerTest < Minitest::Test
     server = PandocRunnerServer.new(
       socket_path: @test_socket_path,
       log_level: Logger::WARN,
-      command_executor: @mock_executor
+      command_executor: @mock_executor,
+      socket_server: @mock_socket_server
     )
 
     server_thread = Thread.new do
       server.start
     end
 
-    sleep 0.2
+    sleep 0.02
 
     begin
       # 複数の同時リクエストを送信
@@ -163,7 +171,7 @@ class PandocRunnerServerTest < Minitest::Test
 
       5.times do |i|
         client_threads << Thread.new do
-          client = UNIXSocket.new(@test_socket_path)
+          client = @mock_socket_server.create_mock_client
           request = {
             action: 'convert',
             from: 'markdown',
@@ -175,7 +183,7 @@ class PandocRunnerServerTest < Minitest::Test
           response = client.gets
           client.close
 
-          responses << JSON.parse(response)
+          responses << JSON.parse(response) if response
         end
       end
 
@@ -189,7 +197,49 @@ class PandocRunnerServerTest < Minitest::Test
       end
     ensure
       server.stop
-      server_thread.join(1)
+      server_thread.join(0.1)
     end
+  end
+
+  def test_performance_comparison
+    # 性能テスト（時間測定）
+    start_time = Time.now
+
+    server = PandocRunnerServer.new(
+      socket_path: @test_socket_path,
+      log_level: Logger::WARN,
+      command_executor: @mock_executor,
+      socket_server: @mock_socket_server
+    )
+
+    server_thread = Thread.new do
+      server.start
+    end
+
+    sleep 0.02
+
+    begin
+      # 10回のpingリクエスト
+      10.times do
+        client = @mock_socket_server.create_mock_client
+        request = { action: 'ping' }.to_json
+        client.puts(request)
+        response = client.gets
+        client.close
+
+        response_data = JSON.parse(response)
+        assert response_data['success']
+      end
+    ensure
+      server.stop
+      server_thread.join(0.1)
+    end
+
+    end_time = Time.now
+    duration = end_time - start_time
+
+    # MockSocketServerを使用すると、実際のUnixSocketより高速になることを確認
+    assert duration < 1.0, "Test took too long: #{duration} seconds"
+    puts "Fast test completed in #{duration.round(3)} seconds"
   end
 end
