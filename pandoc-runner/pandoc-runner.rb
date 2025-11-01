@@ -7,6 +7,15 @@ require_relative 'lib/request_handler'
 require 'logger'
 require 'optparse'
 
+class FilterSelector < PandocConverter::DefaultFilterSelector
+  # フィルターを返す。使わない場合はnilを返す
+  def get_filter_path(from_format, to_format)
+    return unless from_format == 'markdown' && to_format == 'redmine-textile'
+
+    File.expand_path('../dist/src/ToRedmine.js', __dir__) # TODO: adjust path as needed
+  end
+end
+
 # Pandoc Runner Server
 # Unixソケット経由でpandoc変換リクエストを処理するサーバー
 class PandocRunnerServer
@@ -22,7 +31,7 @@ class PandocRunnerServer
       "[#{datetime}] #{severity}: #{msg}\n"
     end
 
-    @converter = PandocConverter.new(command_executor:)
+    @converter = PandocConverter.new(command_executor:, filter_selector: FilterSelector.new)
     @request_handler = RequestHandler.new(@converter)
     @server = socket_server || UnixSocketServer.new(socket_path: @socket_path, logger: @logger)
     @running = false

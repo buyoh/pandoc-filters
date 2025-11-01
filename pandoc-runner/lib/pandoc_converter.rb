@@ -7,7 +7,14 @@ require_relative 'command_executor'
 class PandocConverter
   class ConversionError < StandardError; end
 
-  def initialize(command_executor: CommandExecutor.new)
+  class DefaultFilterSelector
+    # フィルターを返す。使わない場合はnilを返す
+    def get_filter_path(_from_format, _to_format)
+      nil
+    end
+  end
+
+  def initialize(command_executor: CommandExecutor.new, filter_selector: DefaultFilterSelector)
     @command_executor = command_executor
     validate_pandoc_availability
   end
@@ -19,8 +26,12 @@ class PandocConverter
   def convert_markdown_to_redmine_textile(markdown_text)
     raise ArgumentError, 'markdown_text must be a string' unless markdown_text.is_a?(String)
 
+    filter_arg = @filter_selector.get_filter_path('markdown', 'redmine-textile')
+    command_args = ['pandoc', '-f', 'markdown', '-t', 'textile']
+    command_args += ['--filter', filter_arg] if filter_arg
+
     stdout, stderr, status = @command_executor.execute(
-      'pandoc', '-f', 'markdown', '-t', 'textile',
+      *command_args,
       stdin_data: markdown_text
     )
 
