@@ -4,7 +4,7 @@ Express TypeScript web server for pandoc conversion API.
 
 ## 概要
 
-このサーバーは、pandoc-runnerサーバーと通信してマークダウンからRedmine Textileへの変換を行うREST APIを提供します。
+このサーバーは、pandoc-runnerサーバーと通信してマークダウンからRedmine Textileへの変換を行うREST APIを提供します。また、シンプルなWebアプリケーションをホストして、ブラウザからの変換操作を可能にします。
 
 ## セットアップ
 
@@ -33,6 +33,8 @@ yarn app-server:start
 yarn app-server:dev
 yarn app-server:dev:watch
 ```
+
+サーバー起動後、ブラウザで `http://localhost:3000` にアクセスしてWebアプリケーションを使用できます。
 
 ## API エンドポイント
 
@@ -106,11 +108,18 @@ curl -X POST http://localhost:3000/api/v1/sync/convert \
 ## テスト
 
 ```bash
-# テスト実行
+# テスト実行（TypeScriptファイルを直接実行）
 yarn workspace app-server test
 
-# ビルド + テスト
-yarn workspace app-server build && yarn workspace app-server test
+# テスト実行（ファイル変更監視付き）
+yarn workspace app-server test:watch
+
+# ルートディレクトリからの実行
+yarn app-server:test
+yarn app-server:test:watch
+
+# 従来方式（ビルド後にテスト実行）
+yarn workspace app-server build && node --test dist/tests/**/*.test.js
 ```
 
 ## プロジェクト構造
@@ -128,6 +137,11 @@ app-server/
 │   │   ├── ConversionController.test.ts
 │   │   └── PandocSocketClient.test.ts
 │   └── index.ts             # アプリケーションエントリーポイント
+├── web-simple/              # Webアプリケーション
+│   ├── index.html          # メインHTML
+│   ├── style.css           # スタイルシート
+│   ├── script.js           # JavaScript
+│   └── README.md           # Web-app documentation
 ├── dist/                    # ビルド出力
 ├── package.json
 └── tsconfig.json

@@ -1,0 +1,255 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    min-height: 100vh;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e1e5e9;
+}
+
+header h1 {
+    color: #2c3e50;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+header p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+/* Main converter area */
+.converter-area {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 20px;
+    min-height: 500px;
+}
+
+.input-section {
+    grid-column: 1;
+    grid-row: 1 / 3;
+}
+
+.controls {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+    padding: 0 20px;
+}
+
+.output-section {
+    grid-column: 3;
+    grid-row: 1 / 3;
+}
+
+/* Section headings */
+.input-section h2,
+.output-section h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+/* Textareas */
+textarea {
+    width: 100%;
+    height: 400px;
+    padding: 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+textarea::placeholder {
+    color: #bdc3c7;
+}
+
+#outputText {
+    background-color: #f8f9fa;
+}
+
+/* Buttons */
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+#convertBtn {
+    background-color: #3498db;
+    color: white;
+}
+
+#convertBtn:hover:not(:disabled) {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+#convertBtn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#clearBtn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+#clearBtn:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+#copyBtn {
+    background-color: #27ae60;
+    color: white;
+}
+
+#copyBtn:hover {
+    background-color: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+}
+
+/* Loading spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Footer */
+footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e1e5e9;
+}
+
+.status {
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+}
+
+.status.success {
+    background-color: #d5f4e6;
+    color: #27ae60;
+}
+
+.status.error {
+    background-color: #fadbd8;
+    color: #e74c3c;
+}
+
+.status.loading {
+    background-color: #d6eaf8;
+    color: #3498db;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .converter-area {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        gap: 15px;
+    }
+
+    .input-section {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .controls {
+        grid-column: 1;
+        grid-row: 2;
+        flex-direction: row;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .output-section {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    textarea {
+        height: 250px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+
+    .controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    button {
+        min-width: 100px;
+        padding: 10px 15px;
+    }
+}

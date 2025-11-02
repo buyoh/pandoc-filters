@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pandoc Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Pandoc Converter</h1>
+            <p>Markdown to Redmine Textile Converter</p>
+        </header>
+
+        <main class="converter-area">
+            <div class="input-section">
+                <h2>Markdown Input</h2>
+                <textarea 
+                    id="inputText" 
+                    placeholder="Enter your Markdown text here...
+# Example
+This is **bold** text and this is *italic* text.
+
+## List
+- Item 1
+- Item 2
+- Item 3
+
+```javascript
+console.log('Hello, World!');
+```"></textarea>
+            </div>
+
+            <div class="controls">
+                <button id="convertBtn">
+                    <span id="convertText">Convert</span>
+                    <span id="loadingSpinner" class="spinner" style="display: none;">⟳</span>
+                </button>
+                <button id="clearBtn">Clear</button>
+                <button id="copyBtn">Copy Result</button>
+            </div>
+
+            <div class="output-section">
+                <h2>Redmine Textile Output</h2>
+                <textarea 
+                    id="outputText" 
+                    readonly 
+                    placeholder="Converted text will appear here..."></textarea>
+            </div>
+        </main>
+
+        <footer>
+            <div class="status" id="status">Ready</div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
