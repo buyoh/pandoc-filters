@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { ConversionController } from './controllers/ConversionController';
-import { PandocSocketClient } from './services/PandocSocketClient';
+import { PandocSocketClientImpl } from './services/PandocSocketClientImpl';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Services
-const pandocClient = new PandocSocketClient();
+const pandocClient = new PandocSocketClientImpl();
 const conversionController = new ConversionController(pandocClient);
 
 // API Routes

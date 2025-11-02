@@ -1,7 +1,7 @@
 import { describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 import { ConversionController } from '../controllers/ConversionController';
-import { PandocSocketClient } from '../services/PandocSocketClient';
+import { PandocSocketClient, PandocRequest, PandocResponse } from '../types';
 
 // Mock Express Request/Response
 function createMockRequest(body: any = {}) {
@@ -17,9 +17,22 @@ function createMockResponse() {
 }
 
 // Mock PandocSocketClient
-class MockPandocSocketClient extends PandocSocketClient {
-  constructor(private shouldSucceed = true, private mockOutput = 'converted text') {
-    super('/fake/path');
+class MockPandocSocketClient implements PandocSocketClient {
+  constructor(private shouldSucceed = true, private mockOutput = 'converted text') {}
+
+  async sendRequest(request: PandocRequest): Promise<PandocResponse> {
+    if (request.action === 'ping') {
+      return { success: this.shouldSucceed };
+    }
+    
+    if (request.action === 'convert') {
+      if (!this.shouldSucceed) {
+        return { success: false, error: 'Mock conversion failed' };
+      }
+      return { success: true, output: this.mockOutput };
+    }
+    
+    return { success: false, error: 'Unknown action' };
   }
 
   async ping(): Promise<boolean> {

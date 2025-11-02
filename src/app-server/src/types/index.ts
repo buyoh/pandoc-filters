@@ -29,3 +29,9 @@ export interface ApiResponse<T = any> {
   error?: string;
   timestamp: string;
 }
+
+export interface PandocSocketClient {
+  sendRequest(request: PandocRequest): Promise<PandocResponse>;
+  ping(): Promise<boolean>;
+  convert(input: string, fromFormat?: string, toFormat?: string): Promise<string>;
+}

@@ -1,7 +1,7 @@
 import { Socket } from 'net';
-import { PandocRequest, PandocResponse } from '../types';
+import { PandocRequest, PandocResponse, PandocSocketClient } from '../types';
 
-export class PandocSocketClient {
+export class PandocSocketClientImpl implements PandocSocketClient {
   private socketPath: string;
 
   constructor(socketPath: string = '/tmp/pandoc-runner.sock') {

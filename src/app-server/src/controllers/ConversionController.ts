@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { PandocSocketClient } from '../services/PandocSocketClient';
-import { ConversionRequest, ApiResponse } from '../types';
+import { PandocSocketClient, ConversionRequest, ApiResponse } from '../types';
 
 export class ConversionController {
   constructor(private pandocClient: PandocSocketClient) {}
