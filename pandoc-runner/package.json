@@ -1,0 +1,10 @@
+{
+  "name": "pandoc-runner",
+  "version": "1.0.0",
+  "description": "Ruby pandoc server with Unix socket communication",
+  "scripts": {
+    "test": "rake test",
+    "start": "ruby pandoc-runner.rb"
+  },
+  "private": true
+}
