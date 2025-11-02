@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "workspaces": [
-    "src/app-server",
+    "app-server",
     "pandoc-runner"
   ],
   "scripts": {

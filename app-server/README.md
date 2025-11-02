@@ -19,11 +19,19 @@ yarn workspace app-server build
 ## 実行
 
 ```bash
-# サーバーを起動
+# サーバーを起動（本番用）
 yarn workspace app-server start
 
-# 開発用（ビルド + 起動）
+# 開発用（TypeScriptファイルを直接実行）
 yarn workspace app-server dev
+
+# 開発用（ファイル変更監視付き）
+yarn workspace app-server dev:watch
+
+# ルートディレクトリからの実行
+yarn app-server:start
+yarn app-server:dev
+yarn app-server:dev:watch
 ```
 
 ## API エンドポイント
@@ -108,7 +116,7 @@ yarn workspace app-server build && yarn workspace app-server test
 ## プロジェクト構造
 
 ```
-src/app-server/
+app-server/
 ├── src/
 │   ├── controllers/          # HTTPリクエストハンドラー
 │   │   └── ConversionController.ts
