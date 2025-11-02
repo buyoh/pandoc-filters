@@ -15,6 +15,7 @@
     "app-server:dev": "yarn workspace app-server dev",
     "app-server:dev:watch": "yarn workspace app-server dev:watch",
     "app-server:test": "yarn workspace app-server test",
+    "app-server:test:watch": "yarn workspace app-server test:watch",
     "pandoc-runner:test": "cd pandoc-runner && bundle exec rake test",
     "pandoc-runner:start": "cd pandoc-runner && ruby pandoc-runner.rb"
   },
