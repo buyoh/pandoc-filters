@@ -28,6 +28,9 @@ yarn workspace app-server dev
 # 開発用（ファイル変更監視付き）
 yarn workspace app-server dev:watch
 
+# カスタムソケットパスとポートでの起動
+node dist/index.js --pandoc-socket-path /tmp/custom.sock --port 8080
+
 # ルートディレクトリからの実行
 yarn app-server:start
 yarn app-server:dev
@@ -35,6 +38,12 @@ yarn app-server:dev:watch
 ```
 
 サーバー起動後、ブラウザで `http://localhost:3000` にアクセスしてWebアプリケーションを使用できます。
+
+## コマンドライン引数
+
+- `--pandoc-socket-path <path>`: pandoc-runnerのUnixソケットパス (デフォルト: /tmp/pandoc-runner.sock)
+- `--port <number>` または `-p <number>`: HTTPサーバーのポート番号 (デフォルト: 3000)
+- `--help` または `-h`: ヘルプメッセージを表示
 
 ## API エンドポイント
 
