@@ -16,6 +16,7 @@ class PandocConverter
 
   def initialize(command_executor: CommandExecutor.new, filter_selector: DefaultFilterSelector)
     @command_executor = command_executor
+    @filter_selector = filter_selector
     validate_pandoc_availability
   end
 
