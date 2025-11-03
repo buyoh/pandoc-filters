@@ -5,7 +5,11 @@ import { PandocSocketClient, PandocRequest, PandocResponse } from '../types';
 // Simple mock implementation for interface testing
 class SimpleMockPandocClient implements PandocSocketClient {
   async sendRequest(request: PandocRequest): Promise<PandocResponse> {
-    return { success: true, output: 'mocked response' };
+    return { 
+      success: true, 
+      data: { result: 'mocked response' },
+      timestamp: new Date().toISOString()
+    };
   }
 
   async ping(): Promise<boolean> {
@@ -20,7 +24,11 @@ class SimpleMockPandocClient implements PandocSocketClient {
 // Failing mock implementation
 class FailingMockPandocClient implements PandocSocketClient {
   async sendRequest(request: PandocRequest): Promise<PandocResponse> {
-    return { success: false, error: 'Connection failed' };
+    return { 
+      success: false, 
+      error: { message: 'Connection failed', code: 'CONNECTION_ERROR' },
+      timestamp: new Date().toISOString()
+    };
   }
 
   async ping(): Promise<boolean> {
@@ -50,7 +58,7 @@ describe('PandocSocketClient', () => {
       const client = new SimpleMockPandocClient();
       const result = await client.sendRequest({ action: 'ping' });
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.output, 'mocked response');
+      assert.strictEqual(result.data?.result, 'mocked response');
     });
   });
 
@@ -71,9 +79,9 @@ describe('PandocSocketClient', () => {
 
     it('should return failure response for sendRequest', async () => {
       const client = new FailingMockPandocClient();
-      const result = await client.sendRequest({ action: 'convert', input: 'test' });
+      const result = await client.sendRequest({ action: 'convert', content: 'test' });
       assert.strictEqual(result.success, false);
-      assert.strictEqual(result.error, 'Connection failed');
+      assert.strictEqual(result.error?.message, 'Connection failed');
     });
   });
 

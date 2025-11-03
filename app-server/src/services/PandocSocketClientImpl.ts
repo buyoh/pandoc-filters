@@ -62,15 +62,16 @@ export class PandocSocketClientImpl implements PandocSocketClient {
   async convert(input: string, fromFormat = 'markdown', toFormat = 'redmine-textile'): Promise<string> {
     const response = await this.sendRequest({
       action: 'convert',
-      input,
-      from_format: fromFormat,
-      to_format: toFormat
+      content: input,
+      from: fromFormat,
+      to: toFormat
     });
 
     if (!response.success) {
-      throw new Error(response.error || 'Conversion failed');
+      const errorMessage = response.error?.message || 'Conversion failed';
+      throw new Error(errorMessage);
     }
 
-    return response.output || '';
+    return response.data?.result || '';
   }
 }

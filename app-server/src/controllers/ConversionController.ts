@@ -52,7 +52,7 @@ export class ConversionController {
       } as ApiResponse);
 
     } catch (error) {
-      console.error('Conversion error:', error);
+      console.error('Conversion error:', error, JSON.stringify(error, null, 2));
       
       res.status(500).json({
         success: false,

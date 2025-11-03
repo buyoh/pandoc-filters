@@ -22,17 +22,37 @@ class MockPandocSocketClient implements PandocSocketClient {
 
   async sendRequest(request: PandocRequest): Promise<PandocResponse> {
     if (request.action === 'ping') {
-      return { success: this.shouldSucceed };
+      return { 
+        success: this.shouldSucceed, 
+        data: { message: 'pong' },
+        timestamp: new Date().toISOString()
+      };
     }
     
     if (request.action === 'convert') {
       if (!this.shouldSucceed) {
-        return { success: false, error: 'Mock conversion failed' };
+        return { 
+          success: false, 
+          error: { message: 'Mock conversion failed', code: 'MOCK_ERROR' },
+          timestamp: new Date().toISOString()
+        };
       }
-      return { success: true, output: this.mockOutput };
+      return { 
+        success: true, 
+        data: { 
+          result: this.mockOutput,
+          from: request.from || 'markdown',
+          to: request.to || 'redmine-textile'
+        },
+        timestamp: new Date().toISOString()
+      };
     }
     
-    return { success: false, error: 'Unknown action' };
+    return { 
+      success: false, 
+      error: { message: 'Unknown action', code: 'UNKNOWN_ACTION' },
+      timestamp: new Date().toISOString()
+    };
   }
 
   async ping(): Promise<boolean> {
