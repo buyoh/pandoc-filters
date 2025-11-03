@@ -1,0 +1,33 @@
+services:
+  pandoc-runner:
+    image: node:20
+    container_name: pandoc-runner
+    working_dir: /opt/pandoc-filters/pandoc-runner
+    volumes:
+      - .:/opt/pandoc-filters
+      - common:/var/opt/common
+      - ./third_party/pandoc:/opt/pandoc
+    environment:
+      NODE_ENV: development
+      PF_PANDOC_PATH: /opt/pandoc/bin/pandoc
+    command: node dist/index.js --socket /var/opt/common/pandoc-runner.sock
+    restart: unless-stopped
+
+  app-server:
+    image: node:20
+    container_name: app-server
+    working_dir: /opt/pandoc-filters/app-server
+    volumes:
+      - .:/opt/pandoc-filters
+      - common:/var/opt/common
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+    command: node dist/index.js --pandoc-socket-path /var/opt/common/pandoc-runner.sock
+    depends_on:
+      - pandoc-runner
+    restart: unless-stopped
+
+volumes:
+  common:
