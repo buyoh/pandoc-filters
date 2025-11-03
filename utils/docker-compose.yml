@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app-server:
+    image: node:20
+    ports:
+      - "3000:3000"
+    # depends_on:
+    #   - pandoc-runner
+    environment:
+      PANDOC_RUNNER_SOCKET_PATH: /tmp/pandoc-runner.sock
+    command:
+      sh -c "cd /app && yarn install --production && yarn app-server:start"
+
+  # pandoc-runner:
+  #   build:
+  #     context: ../pandoc-runner
+  #   volumes:
+  #     - /tmp:/tmp
+  #     - ./spec:/app/spec

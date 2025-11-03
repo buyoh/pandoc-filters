@@ -16,7 +16,8 @@ PANDOC_RUNNER_LOG="$(realpath "$PANDOC_RUNNER_LOG")"
 APP_SERVER_LOG="$(realpath "$APP_SERVER_LOG")"
 
 # Start pandoc-runner server
-ruby pandoc-runner/pandoc-runner.rb --socket "$PANDOC_RUNNER_SOCKET" >> "$PANDOC_RUNNER_LOG" 2>&1 &
+# ruby pandoc-runner-rb/pandoc-runner.rb --socket "$PANDOC_RUNNER_SOCKET" >> "$PANDOC_RUNNER_LOG" 2>&1 &
+(cd pandoc-runner && exec node dist/index.js --socket "$PANDOC_RUNNER_SOCKET" >> "$PANDOC_RUNNER_LOG" 2>&1) &
 PANDOC_RUNNER_PID=$!
 echo $PANDOC_RUNNER_PID >> "$PID_LIST"
 

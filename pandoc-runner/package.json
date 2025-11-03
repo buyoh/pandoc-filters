@@ -1,10 +1,29 @@
 {
   "name": "pandoc-runner",
   "version": "1.0.0",
-  "description": "Ruby pandoc server with Unix socket communication",
+  "description": "TypeScript pandoc server with Unix socket communication",
+  "main": "dist/src/index.js",
   "scripts": {
-    "test": "rake test",
-    "start": "ruby pandoc-runner.rb"
+    "build": "tsc",
+    "start": "node dist/src/index.js",
+    "start:args": "node dist/src/index.js --",
+    "dev": "tsx src/index.ts",
+    "dev:args": "tsx src/index.ts --",
+    "dev:watch": "tsx --watch src/index.ts",
+    "test": "tsx --test src/tests/**/*.test.ts",
+    "test:watch": "tsx --test --watch src/tests/**/*.test.ts",
+    "clean": "rimraf dist"
   },
-  "private": true
+  "keywords": ["pandoc", "socket", "server", "typescript"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  }
 }
