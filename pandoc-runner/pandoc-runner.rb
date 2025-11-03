@@ -22,8 +22,7 @@ class PandocRunnerServer
   DEFAULT_SOCKET_PATH = '/tmp/pandoc-runner.sock'
   DEFAULT_LOG_LEVEL = Logger::INFO
 
-  def initialize(socket_path: DEFAULT_SOCKET_PATH, log_level: DEFAULT_LOG_LEVEL, command_executor: nil,
-                 socket_server: nil)
+  def initialize(socket_path: DEFAULT_SOCKET_PATH, log_level: DEFAULT_LOG_LEVEL)
     @socket_path = socket_path
     @logger = Logger.new($stdout)
     @logger.level = log_level
@@ -31,9 +30,9 @@ class PandocRunnerServer
       "[#{datetime}] #{severity}: #{msg}\n"
     end
 
-    @converter = PandocConverter.new(command_executor:, filter_selector: FilterSelector.new)
+    @converter = PandocConverter.new(filter_selector: FilterSelector.new)
     @request_handler = RequestHandler.new(@converter)
-    @server = socket_server || UnixSocketServer.new(socket_path: @socket_path, logger: @logger)
+    @server = UnixSocketServer.new(socket_path: @socket_path, logger: @logger)
     @running = false
   end
 
