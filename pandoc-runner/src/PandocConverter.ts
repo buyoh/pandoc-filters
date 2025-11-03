@@ -1,6 +1,13 @@
 import { CommandExecutor, FilterSelector, ConversionError } from './types';
 import { DefaultCommandExecutor } from './CommandExecutor';
 
+function solvePandocPath() {
+  if (process.env.PF_PANDOC_PATH) {
+    return process.env.PF_PANDOC_PATH;
+  }
+  return 'pandoc';
+}
+
 /**
  * デフォルトのフィルターセレクター
  */
@@ -40,7 +47,7 @@ export class PandocConverter {
    */
   async validatePandocAvailability(): Promise<void> {
     try {
-      const result = await this.commandExecutor.execute('pandoc', ['--version']);
+      const result = await this.commandExecutor.execute(solvePandocPath(), ['--version']);
       if (result.exitCode !== 0) {
         throw new ConversionError('pandoc command not available');
       }
@@ -63,7 +70,7 @@ export class PandocConverter {
     }
 
     const filterPath = this.filterSelector.getFilterPath('markdown', 'redmine-textile');
-    const commandArgs = ['pandoc', '-f', 'markdown', '-t', 'textile'];
+    const commandArgs = [solvePandocPath(), '-f', 'markdown', '-t', 'textile'];
     
     if (filterPath) {
       commandArgs.push('--filter', filterPath);
