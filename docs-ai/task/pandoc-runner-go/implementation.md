@@ -4,16 +4,14 @@
 
 | コンポーネント | 実装 | テスト | 備考 |
 |--------------|------|--------|------|
-| types パッケージ | - | - | |
-| logger パッケージ | - | - | |
-| executor パッケージ | - | - | |
-| converter パッケージ | - | - | |
-| handler パッケージ | - | - | |
-| server/unix_socket | - | - | |
-| server/runner_server | - | - | |
-| cmd/main.go | - | - | |
-
-凡例: `-` 未着手 / `WIP` 作業中 / `Done` 完了
+| types パッケージ | Done | - | 型定義のみ |
+| logger パッケージ | Done | Done | |
+| executor パッケージ | Done | Done | Unit-Real |
+| converter パッケージ | Done | Done | StubCommandExecutor 使用 |
+| handler パッケージ | Done | Done | StubPandocConverter 使用 |
+| server/unix_socket | Done | Done | Unit-Real |
+| server/runner_server | Done | Done | StubCommandExecutor 使用 |
+| cmd/main.go | Done | - | |
 
 ## 実装手順
 
