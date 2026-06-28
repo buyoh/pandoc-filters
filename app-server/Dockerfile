@@ -28,6 +28,7 @@ WORKDIR /app
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json ./
+COPY --chown=node:node web-simple ./web-simple
 
 USER node
 ENTRYPOINT ["node", "dist/index.js"]
