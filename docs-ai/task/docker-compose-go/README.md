@@ -15,10 +15,10 @@ Go 版 pandoc-runner (`pandoc-runner-go`) を使用する `docker-compose.go.yml
 ## ステータス
 
 - [x] 設計ドキュメント作成
-- [ ] `pandoc-runner-go/Dockerfile` 作成
-- [ ] `app-server/Dockerfile` 作成
-- [ ] `docker-compose.go.yml` 作成
-- [ ] 動作確認
+- [x] `pandoc-runner-go/Dockerfile` 作成
+- [x] `app-server/Dockerfile` 作成
+- [x] `docker-compose.go.yml` 作成
+- [ ] 動作確認（`docker compose -f docker-compose.go.yml up --build`）
 
 ## 作成ファイル一覧
 

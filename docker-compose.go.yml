@@ -1,0 +1,42 @@
+# Go 版 pandoc-runner を使用する Docker Compose 設定。
+# 既存の docker-compose.yml（TypeScript 版）とは異なり、
+# 各サービスをマルチステージビルドの Dockerfile でビルドする。
+services:
+  pandoc-runner:
+    build:
+      context: ./pandoc-runner-go
+      dockerfile: Dockerfile
+    container_name: pandoc-runner-go
+    volumes:
+      - common:/var/opt/common
+    # pandoc/core:3-debian ベースイメージに pandoc が同梱されているため
+    # PF_PANDOC_PATH の設定は不要（デフォルトの "pandoc" で PATH から解決される）
+    command: ["-socket", "/var/opt/common/pandoc-runner.sock"]
+    healthcheck:
+      # Unix ソケットファイルが作成されたことを確認する
+      test: ["CMD-SHELL", "test -S /var/opt/common/pandoc-runner.sock"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  app-server:
+    build:
+      context: ./app-server
+      dockerfile: Dockerfile
+    container_name: app-server
+    volumes:
+      - common:/var/opt/common
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    command: ["--pandoc-socket-path", "/var/opt/common/pandoc-runner.sock"]
+    depends_on:
+      pandoc-runner:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  common:
