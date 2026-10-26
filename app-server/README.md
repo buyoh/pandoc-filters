@@ -138,13 +138,18 @@ app-server/
 ├── src/
 │   ├── controllers/          # HTTPリクエストハンドラー
 │   │   └── ConversionController.ts
+│   ├── middleware/          # Expressミドルウェア
+│   │   └── errorHandler.ts
 │   ├── services/            # ビジネスロジック
 │   │   └── PandocSocketClientImpl.ts
 │   ├── types/               # TypeScript型定義
 │   │   └── index.ts
 │   ├── tests/               # テストファイル
+│   │   ├── stubs.ts         # テスト用スタブ
 │   │   ├── ConversionController.test.ts
-│   │   └── PandocSocketClient.test.ts
+│   │   ├── PandocSocketClientImpl.test.ts
+│   │   ├── PandocSocketClientImpl.real.test.ts
+│   │   └── errorHandler.test.ts
 │   └── index.ts             # アプリケーションエントリーポイント
 ├── web-simple/              # Webアプリケーション
 │   ├── index.html          # メインHTML
@@ -158,6 +163,10 @@ app-server/
 
 ## エラーハンドリング
 
-- 400: 不正なリクエスト（入力データの検証エラー）
+エラー時の `error` は固定文言で、内部情報（ソケットパスや pandoc のエラー出力など）は含まない。詳細はサーバーのログに出力される。
+
+- 400: 不正なリクエスト（入力データの検証エラー、不正な JSON、未対応の変換形式）
+- 413: リクエストボディが大きすぎる
+- 502: 変換エラー、または pandoc-runner から想定外の応答
 - 503: pandoc-runnerサーバーが利用できない
-- 500: 変換エラーまたは内部サーバーエラー
+- 500: 内部サーバーエラー

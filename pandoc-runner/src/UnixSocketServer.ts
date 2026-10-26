@@ -2,6 +2,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import { Logger } from './types';
 import { DefaultLogger } from './Logger';
+import { ClientConnection } from './ClientConnection';
 
 /**
  * Unixソケット経由での通信を管理するクラス
@@ -27,11 +28,13 @@ export class UnixSocketServer {
     return new Promise((resolve, reject) => {
       this.cleanupSocket();
       
-      this.server = net.createServer();
+      // allowHalfOpen: 既定（false）ではクライアントが送信後に end()（FIN）すると
+      // サーバ側の書き込みも閉じられ、応答を返せない。ClientConnection が応答後に閉じる
+      this.server = net.createServer({ allowHalfOpen: true });
       this.running = true;
 
       this.server.on('connection', (socket: net.Socket) => {
-        this.handleClient(socket, requestHandler);
+        new ClientConnection(socket, requestHandler, this.logger);
       });
 
       this.server.on('error', (error: Error) => {
@@ -77,54 +80,6 @@ export class UnixSocketServer {
    */
   getSocketPath(): string {
     return this.socketPath;
-  }
-
-  /**
-   * クライアントからの接続を処理する
-   * @param socket クライアントソケット
-   * @param requestHandler リクエストハンドラー
-   */
-  private handleClient(
-    socket: net.Socket, 
-    requestHandler: (requestLine: string) => Promise<string>
-  ): void {
-    let buffer = '';
-
-    socket.on('data', async (data: any) => {
-      buffer += data.toString();
-      
-      // 改行で区切られたリクエストを処理
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // 最後の不完全な行をバッファに保持
-
-      for (const line of lines) {
-        if (line.trim()) {
-          try {
-            this.logger.debug(`Received request: ${line.trim()}`);
-            const response = await requestHandler(line.trim());
-            
-            socket.write(response + '\n');
-            this.logger.debug(`Sent response: ${response}`);
-          } catch (error) {
-            this.logger.error(`Error handling request: ${error}`);
-            const errorResponse = JSON.stringify({
-              success: false,
-              error: { message: `${error}`, code: 'INTERNAL_ERROR' },
-              timestamp: new Date().toISOString()
-            });
-            socket.write(errorResponse + '\n');
-          }
-        }
-      }
-    });
-
-    socket.on('error', (error: Error) => {
-      this.logger.error(`Client socket error: ${error.message}`);
-    });
-
-    socket.on('close', () => {
-      this.logger.debug('Client disconnected');
-    });
   }
 
   /**

@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
-import { PandocSocketClient, ConversionRequest, ApiResponse } from '../types';
+import { PandocSocketClient, ConversionRequest, ApiResponse, ConvertFailureKind } from '../types';
 
+/** 失敗の種類ごとの HTTP ステータスとクライアントへの固定文言（内部情報は返さない） */
+const FAILURE_RESPONSES: Record<ConvertFailureKind, { status: number; error: string }> = {
+  invalid_request: { status: 400, error: 'Invalid conversion request' },
+  conversion_failed: { status: 502, error: 'Conversion failed' },
+  unavailable: { status: 503, error: 'Pandoc server is not available' },
+  runner_error: { status: 502, error: 'Pandoc server returned an unexpected response' }
+};
+
+/** 変換 API のリクエストを検証し、pandoc-runner の結果を HTTP レスポンスに対応付けるコントローラ */
 export class ConversionController {
   constructor(private pandocClient: PandocSocketClient) {}
 
@@ -27,38 +36,43 @@ export class ConversionController {
         return;
       }
 
-      // Check if pandoc server is available
-      const isAlive = await this.pandocClient.ping();
-      if (!isAlive) {
-        res.status(503).json({
+      // 以前は変換前に ping して 2 接続を張っていたが、ping 成功後の切断が 500 になる等の
+      // 問題があったため廃止。接続失敗は convert の結果（unavailable）で判定する
+      const result = await this.pandocClient.convert(input, from_format, to_format);
+
+      if (!result.ok) {
+        console.error(
+          `Conversion failed: kind=${result.kind} runnerCode=${result.runnerCode ?? '-'} detail=${result.detail}`
+        );
+        const failure = FAILURE_RESPONSES[result.kind];
+        const body: ApiResponse = {
           success: false,
-          error: 'Pandoc server is not available',
+          error: failure.error,
           timestamp: new Date().toISOString()
-        } as ApiResponse);
+        };
+        res.status(failure.status).json(body);
         return;
       }
 
-      // Perform conversion
-      const output = await this.pandocClient.convert(input, from_format, to_format);
-
-      res.json({
+      const body: ApiResponse<{ output: string; from_format: string; to_format: string }> = {
         success: true,
         data: {
-          output,
+          output: result.output,
           from_format,
           to_format
         },
         timestamp: new Date().toISOString()
-      } as ApiResponse);
-
+      };
+      res.json(body);
     } catch (error) {
-      console.error('Conversion error:', error, JSON.stringify(error, null, 2));
-      
-      res.status(500).json({
+      console.error('Unexpected conversion error:', error);
+
+      const body: ApiResponse = {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown conversion error',
+        error: 'Internal server error',
         timestamp: new Date().toISOString()
-      } as ApiResponse);
+      };
+      res.status(500).json(body);
     }
   }
 }

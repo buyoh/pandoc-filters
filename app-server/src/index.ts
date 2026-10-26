@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import path from 'path';
 import { ConversionController } from './controllers/ConversionController';
 import { PandocSocketClientImpl } from './services/PandocSocketClientImpl';
+import { errorHandler } from './middleware/errorHandler';
 
 // Parse command line arguments
 function parseArguments() {
@@ -104,13 +105,7 @@ app.get('*', (req, res, next) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message
-  });
-});
+app.use(errorHandler);
 
 // 404 handler for API routes only
 app.use('/api/*', (req, res) => {

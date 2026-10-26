@@ -54,6 +54,8 @@ The server accepts JSON requests via Unix socket with the following format:
 }
 ```
 
+Requests and responses are newline-terminated JSON lines (UTF-8). For the full protocol specification (response format, error codes, connection model), see `docs-ai/architecture/pandoc-runner-protocol.md`.
+
 ## Testing
 
 ```bash

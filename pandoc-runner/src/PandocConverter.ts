@@ -1,5 +1,16 @@
-import { CommandExecutor, FilterSelector, ConversionError } from './types';
+import {
+  CommandExecutor,
+  CommandResult,
+  FilterSelector,
+  ConversionError,
+  ConversionOutcome,
+  MarkdownConverter
+} from './types';
 import { DefaultCommandExecutor } from './CommandExecutor';
+
+function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
+}
 
 function solvePandocPath() {
   if (process.env.PF_PANDOC_PATH) {
@@ -30,7 +41,7 @@ export class DefaultFilterSelector implements FilterSelector {
 /**
  * pandocコマンドを実行してmarkdownからredmine-textileに変換するクラス
  */
-export class PandocConverter {
+export class PandocConverter implements MarkdownConverter {
   private commandExecutor: CommandExecutor;
   private filterSelector: FilterSelector;
 
@@ -52,7 +63,7 @@ export class PandocConverter {
         throw new ConversionError('pandoc command not available');
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes('ENOENT')) {
+      if (isErrnoException(error) && error.code === 'ENOENT') {
         throw new ConversionError('pandoc command not found');
       }
       throw new ConversionError('pandoc command not available');
@@ -60,42 +71,37 @@ export class PandocConverter {
   }
 
   /**
-   * markdownからredmine-textileに変換する
+   * markdownからredmine-textileに変換する。pandoc の失敗は戻り値で返す
    * @param markdownText 変換元のmarkdownテキスト
-   * @returns 変換後のredmine-textileテキスト
    */
-  async convertMarkdownToRedmineTextile(markdownText: string): Promise<string> {
-    if (typeof markdownText !== 'string') {
-      throw new Error('markdown_text must be a string');
-    }
-
+  async convertMarkdownToRedmineTextile(markdownText: string): Promise<ConversionOutcome> {
     const filterPath = this.filterSelector.getFilterPath('markdown', 'redmine-textile');
-    const commandArgs = [solvePandocPath(), '-f', 'markdown', '-t', 'textile'];
-    
+    const commandArgs = ['-f', 'markdown', '-t', 'textile'];
+
     if (filterPath) {
       commandArgs.push('--filter', filterPath);
     }
 
+    let result: CommandResult;
     try {
-      const result = await this.commandExecutor.execute(
-        commandArgs[0],
-        commandArgs.slice(1),
-        { stdin: markdownText }
-      );
-
-      if (result.exitCode !== 0) {
-        throw new ConversionError(`Pandoc conversion failed: ${result.stderr}`);
-      }
-
-      return result.stdout;
+      result = await this.commandExecutor.execute(solvePandocPath(), commandArgs, { stdin: markdownText });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('ENOENT')) {
-        throw new ConversionError('pandoc command not found');
+      // コマンドを起動できない（ENOENT 等）。execute の reject のみを変換失敗として扱う
+      if (isErrnoException(error) && error.code === 'ENOENT') {
+        return { ok: false, message: 'pandoc command not found' };
       }
-      if (error instanceof ConversionError) {
-        throw error;
-      }
-      throw new ConversionError(`Conversion failed: ${error}`);
+      return { ok: false, message: `Failed to run pandoc: ${error}` };
     }
+
+    if (result.signal !== null) {
+      return { ok: false, message: `Pandoc was terminated by signal ${result.signal}: ${result.stderr.trim()}` };
+    }
+    if (result.exitCode !== 0) {
+      return { ok: false, message: `Pandoc conversion failed (exit code ${result.exitCode}): ${result.stderr.trim()}` };
+    }
+
+    // 以前は CommandExecutor が stdout 全体を trim() しており、先頭のインデント等が失われていた。
+    // プロトコル仕様に従い、末尾の改行のみ除去する
+    return { ok: true, output: result.stdout.replace(/(\r?\n)+$/, '') };
   }
 }
