@@ -16,40 +16,74 @@ function converterWith(executor: StubCommandExecutor): PandocConverter {
 
 describe('PandocConverter outcome', () => {
   it('fails on non-zero exit code', async () => {
-    const executor = new StubCommandExecutor({ result: { stdout: '', stderr: 'bad', exitCode: 1, signal: null } });
-    const outcome = await converterWith(executor).convertMarkdownToRedmineTextile('# x');
+    const executor = new StubCommandExecutor({
+      result: { stdout: '', stderr: 'bad', exitCode: 1, signal: null },
+    });
+    const outcome =
+      await converterWith(executor).convertMarkdownToRedmineTextile('# x');
     assert.strictEqual(outcome.ok, false);
   });
 
   it('fails when terminated by a signal', async () => {
     const executor = new StubCommandExecutor({
-      result: { stdout: 'partial', stderr: '', exitCode: null, signal: 'SIGKILL' }
+      result: {
+        stdout: 'partial',
+        stderr: '',
+        exitCode: null,
+        signal: 'SIGKILL',
+      },
     });
-    const outcome = await converterWith(executor).convertMarkdownToRedmineTextile('# x');
+    const outcome =
+      await converterWith(executor).convertMarkdownToRedmineTextile('# x');
     assert.strictEqual(outcome.ok, false);
     assert.match(!outcome.ok ? outcome.message : '', /SIGKILL/);
   });
 
   it('fails when the command cannot be spawned', async () => {
-    const error = Object.assign(new Error('spawn pandoc ENOENT'), { code: 'ENOENT' });
-    const outcome = await converterWith(new StubCommandExecutor({ error })).convertMarkdownToRedmineTextile('# x');
-    assert.deepStrictEqual(outcome, { ok: false, message: 'pandoc command not found' });
+    const error = Object.assign(new Error('spawn pandoc ENOENT'), {
+      code: 'ENOENT',
+    });
+    const outcome = await converterWith(
+      new StubCommandExecutor({ error })
+    ).convertMarkdownToRedmineTextile('# x');
+    assert.deepStrictEqual(outcome, {
+      ok: false,
+      message: 'pandoc command not found',
+    });
   });
 
   it('removes only trailing newlines and keeps leading whitespace', async () => {
     const executor = new StubCommandExecutor({
-      result: { stdout: '  indented\n\nh1. title\n\n', stderr: '', exitCode: 0, signal: null }
+      result: {
+        stdout: '  indented\n\nh1. title\n\n',
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+      },
     });
-    const outcome = await converterWith(executor).convertMarkdownToRedmineTextile('# x');
-    assert.deepStrictEqual(outcome, { ok: true, output: '  indented\n\nh1. title' });
+    const outcome =
+      await converterWith(executor).convertMarkdownToRedmineTextile('# x');
+    assert.deepStrictEqual(outcome, {
+      ok: true,
+      output: '  indented\n\nh1. title',
+    });
   });
 
   it('passes the configured pandoc path and filter path to pandoc', async () => {
-    const executor = new StubCommandExecutor({ result: { stdout: 'ok', stderr: '', exitCode: 0, signal: null } });
-    const converter = new PandocConverter(executor, new DefaultFilterSelector('/x/f.js'), '/opt/pandoc');
+    const executor = new StubCommandExecutor({
+      result: { stdout: 'ok', stderr: '', exitCode: 0, signal: null },
+    });
+    const converter = new PandocConverter(
+      executor,
+      new DefaultFilterSelector('/x/f.js'),
+      '/opt/pandoc'
+    );
     await converter.convertMarkdownToRedmineTextile('# x');
     assert.deepStrictEqual(executor.calls, [
-      { command: '/opt/pandoc', args: ['-f', 'markdown', '-t', 'textile', '--filter', '/x/f.js'] }
+      {
+        command: '/opt/pandoc',
+        args: ['-f', 'markdown', '-t', 'textile', '--filter', '/x/f.js'],
+      },
     ]);
   });
 });

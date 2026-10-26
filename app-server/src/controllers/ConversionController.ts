@@ -1,13 +1,25 @@
 import { NextFunction, Request, Response } from 'express';
-import { PandocSocketClient, ApiErrorResponse, ApiResponse, ConvertData, ConvertFailureKind } from '../types';
+import {
+  PandocSocketClient,
+  ApiErrorResponse,
+  ApiResponse,
+  ConvertData,
+  ConvertFailureKind,
+} from '../types';
 import { validateConversionRequest } from './ConversionRequestValidator';
 
 /** 失敗の種類ごとの HTTP ステータスとクライアントへの固定文言（内部情報は返さない） */
-const FAILURE_RESPONSES: Record<ConvertFailureKind, { status: number; error: string }> = {
+const FAILURE_RESPONSES: Record<
+  ConvertFailureKind,
+  { status: number; error: string }
+> = {
   invalid_request: { status: 400, error: 'Invalid conversion request' },
   conversion_failed: { status: 502, error: 'Conversion failed' },
   unavailable: { status: 503, error: 'Pandoc server is not available' },
-  runner_error: { status: 502, error: 'Pandoc server returned an unexpected response' }
+  runner_error: {
+    status: 502,
+    error: 'Pandoc server returned an unexpected response',
+  },
 };
 
 /** HTTP 応答として書き出す内容（Express に依存しない） */
@@ -21,7 +33,11 @@ function timestamp(): string {
 }
 
 function errorResult(status: number, error: string): HttpResult {
-  const body: ApiErrorResponse = { success: false, error, timestamp: timestamp() };
+  const body: ApiErrorResponse = {
+    success: false,
+    error,
+    timestamp: timestamp(),
+  };
   return { status, body };
 }
 
@@ -40,7 +56,11 @@ export class ConversionController {
 
       // 以前は変換前に ping して 2 接続を張っていたが、ping 成功後の切断が 500 になる等の
       // 問題があったため廃止。接続失敗は convert の結果（unavailable）で判定する
-      const result = await this.pandocClient.convert(input, fromFormat, toFormat);
+      const result = await this.pandocClient.convert(
+        input,
+        fromFormat,
+        toFormat
+      );
 
       if (!result.ok) {
         console.error(
@@ -54,9 +74,13 @@ export class ConversionController {
         status: 200,
         body: {
           success: true,
-          data: { output: result.output, from_format: fromFormat, to_format: toFormat },
-          timestamp: timestamp()
-        }
+          data: {
+            output: result.output,
+            from_format: fromFormat,
+            to_format: toFormat,
+          },
+          timestamp: timestamp(),
+        },
       };
     } catch (error) {
       console.error('Unexpected conversion error:', error);
@@ -69,7 +93,11 @@ export class ConversionController {
    * （Express 4 は async ハンドラの reject を捕捉せず、unhandledRejection でプロセスが終了するため）
    * @param next Express から呼ばれる場合は常に渡される。テストから直接呼ぶ場合は省略可能
    */
-  async convertSync(req: Request, res: Response, next?: NextFunction): Promise<void> {
+  async convertSync(
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ): Promise<void> {
     const result = await this.handle(req.body);
     try {
       res.status(result.status).json(result.body);

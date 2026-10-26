@@ -50,13 +50,27 @@ describe('UnixSocketServer (real socket)', () => {
     await server.stop();
   });
 
-  it('round-trips a request containing Japanese text', { timeout: 5000 }, async () => {
-    const response = await roundTrip(JSON.stringify({ content: '日本語テキスト' }), false);
-    assert.deepStrictEqual(JSON.parse(response), { echo: '日本語テキスト' });
-  });
+  it(
+    'round-trips a request containing Japanese text',
+    { timeout: 5000 },
+    async () => {
+      const response = await roundTrip(
+        JSON.stringify({ content: '日本語テキスト' }),
+        false
+      );
+      assert.deepStrictEqual(JSON.parse(response), { echo: '日本語テキスト' });
+    }
+  );
 
-  it('responds even if the client half-closes after sending', { timeout: 5000 }, async () => {
-    const response = await roundTrip(JSON.stringify({ content: 'half' }), true);
-    assert.deepStrictEqual(JSON.parse(response), { echo: 'half' });
-  });
+  it(
+    'responds even if the client half-closes after sending',
+    { timeout: 5000 },
+    async () => {
+      const response = await roundTrip(
+        JSON.stringify({ content: 'half' }),
+        true
+      );
+      assert.deepStrictEqual(JSON.parse(response), { echo: 'half' });
+    }
+  );
 });

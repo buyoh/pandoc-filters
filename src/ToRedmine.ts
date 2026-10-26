@@ -1,4 +1,10 @@
-import { RawBlock, RawInline, AnyElt, PandocMetaMap, toJSONFilter } from 'pandoc-filter';
+import {
+  RawBlock,
+  RawInline,
+  AnyElt,
+  PandocMetaMap,
+  toJSONFilter,
+} from 'pandoc-filter';
 
 //
 
@@ -54,7 +60,10 @@ function action(
     // neutralizeRedmineOfftags によりコード中の `<pre` はタグとして解釈されなくなったため、回避策は削除した
     const language = extractLanguageClass(classes);
     const syntax = language ? ` class="${language}"` : '';
-    return RawBlock('html', `<pre><code${syntax}>\n${neutralizeRedmineOfftags(code)}</code></pre>\n`);
+    return RawBlock(
+      'html',
+      `<pre><code${syntax}>\n${neutralizeRedmineOfftags(code)}</code></pre>\n`
+    );
   } else if (elem.t === 'Code') {
     const [, code] = elem.c;
     return RawInline('html', `<code>${neutralizeRedmineOfftags(code)}</code>`);

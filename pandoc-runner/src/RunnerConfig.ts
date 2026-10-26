@@ -21,7 +21,10 @@ export const DEFAULT_SOCKET_PATH = '/tmp/pandoc-runner.sock';
  * 既定のフィルタパス。src/ からの実行（tsx）でも dist/ からの実行（node）でも
  * `pandoc-runner/<dir>/` の 2 階層上がリポジトリルートになる
  */
-export const DEFAULT_FILTER_PATH = path.resolve(__dirname, '../../dist/src/ToRedmine.js');
+export const DEFAULT_FILTER_PATH = path.resolve(
+  __dirname,
+  '../../dist/src/ToRedmine.js'
+);
 
 function nonEmpty(value: string | undefined): string | undefined {
   return value !== undefined && value.length > 0 ? value : undefined;
@@ -38,12 +41,15 @@ export function resolveRunnerConfig(env: NodeJS.ProcessEnv): RunnerConfig {
   const filterPath = nonEmpty(env.PF_FILTER_PATH);
   return {
     pandocPath: nonEmpty(env.PF_PANDOC_PATH) ?? 'pandoc',
-    filterPath: filterPath !== undefined ? path.resolve(filterPath) : DEFAULT_FILTER_PATH,
+    filterPath:
+      filterPath !== undefined ? path.resolve(filterPath) : DEFAULT_FILTER_PATH,
   };
 }
 
 /** 設定値の検証結果。ファイルが無い等の想定される失敗は戻り値で返す */
-export type RunnerConfigValidation = { ok: true } | { ok: false; message: string };
+export type RunnerConfigValidation =
+  | { ok: true }
+  | { ok: false; message: string };
 
 /**
  * 設定値が指すファイルを検証する。フィルタが無いと全リクエストが変換失敗になるため、起動時に検知する

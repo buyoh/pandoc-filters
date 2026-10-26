@@ -12,11 +12,19 @@ function startConvert(input = '# x') {
 }
 
 function successLine(result: unknown): string {
-  return JSON.stringify({ success: true, data: { result }, timestamp: 't' }) + '\n';
+  return (
+    JSON.stringify({ success: true, data: { result }, timestamp: 't' }) + '\n'
+  );
 }
 
 function errorLine(code: string): string {
-  return JSON.stringify({ success: false, error: { code, message: `msg ${code}` }, timestamp: 't' }) + '\n';
+  return (
+    JSON.stringify({
+      success: false,
+      error: { code, message: `msg ${code}` },
+      timestamp: 't',
+    }) + '\n'
+  );
 }
 
 describe('PandocSocketClientImpl', () => {
@@ -29,7 +37,7 @@ describe('PandocSocketClientImpl', () => {
       action: 'convert',
       content: '# 見出し',
       from: 'markdown',
-      to: 'redmine-textile'
+      to: 'redmine-textile',
     });
   });
 
@@ -69,7 +77,7 @@ describe('PandocSocketClientImpl', () => {
     ['invalid JSON', 'not json\n'],
     ['null', 'null\n'],
     ['success without data', '{"success":true}\n'],
-    ['success without result', successLine(undefined)]
+    ['success without result', successLine(undefined)],
   ]) {
     it(`maps ${name} to runner_error`, async () => {
       const { socket, result } = startConvert();
@@ -91,7 +99,7 @@ describe('PandocSocketClientImpl', () => {
     ['CONVERSION_ERROR', 'conversion_failed'],
     ['UNSUPPORTED_CONVERSION', 'invalid_request'],
     ['INVALID_REQUEST', 'invalid_request'],
-    ['INTERNAL_ERROR', 'runner_error']
+    ['INTERNAL_ERROR', 'runner_error'],
   ]) {
     it(`maps runner code ${code} to ${kind}`, async () => {
       const { socket, result } = startConvert();

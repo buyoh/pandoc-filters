@@ -45,16 +45,19 @@ export class DefaultCommandExecutor implements CommandExecutor {
 
       // バグ修正: 以前は `exitCode: code || 0` としていたため、シグナルで kill された
       // プロセス（code === null）が成功扱いになっていた。code と signal をそのまま返す。
-      child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
-        if (settled) return;
-        settled = true;
-        resolve({
-          stdout: Buffer.concat(stdoutChunks).toString('utf8'),
-          stderr: Buffer.concat(stderrChunks).toString('utf8'),
-          exitCode: code,
-          signal,
-        });
-      });
+      child.on(
+        'close',
+        (code: number | null, signal: NodeJS.Signals | null) => {
+          if (settled) return;
+          settled = true;
+          resolve({
+            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
+            stderr: Buffer.concat(stderrChunks).toString('utf8'),
+            exitCode: code,
+            signal,
+          });
+        }
+      );
 
       // バグ修正: stdin の 'error' にリスナーが無く、子プロセスが stdin を読み切る前に終了すると
       // EPIPE が uncaught exception となり runner 全体がクラッシュしていた。

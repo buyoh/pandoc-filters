@@ -2,7 +2,7 @@ import {
   Logger,
   PandocAvailabilityValidator,
   RequestLineHandler,
-  SocketServer
+  SocketServer,
 } from './types';
 
 /** PandocRunnerServer が使用するコンポーネント。組み立ては composition root（index.ts）で行う */

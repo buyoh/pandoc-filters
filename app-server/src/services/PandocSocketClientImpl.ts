@@ -1,6 +1,11 @@
 import { createConnection } from 'net';
 import { Duplex } from 'stream';
-import { ConvertResult, PandocRequest, PandocResponse, PandocSocketClient } from '../types';
+import {
+  ConvertResult,
+  PandocRequest,
+  PandocResponse,
+  PandocSocketClient,
+} from '../types';
 
 /** Unix ソケットパスへ接続した Duplex を返すファクトリ。テストではスタブを返す */
 export type SocketConnector = (socketPath: string) => Duplex;
@@ -11,7 +16,13 @@ type SendResult =
   | { ok: false; kind: 'unavailable' | 'runner_error'; detail: string };
 
 /** runner に接続できない（または過負荷）ことを示すエラーコード */
-const UNAVAILABLE_ERROR_CODES = new Set(['ENOENT', 'ECONNREFUSED', 'EACCES', 'ENOTSOCK', 'EAGAIN']);
+const UNAVAILABLE_ERROR_CODES = new Set([
+  'ENOENT',
+  'ECONNREFUSED',
+  'EACCES',
+  'ENOTSOCK',
+  'EAGAIN',
+]);
 
 /**
  * 応答行の形を検証する。形が不正な場合は undefined
@@ -36,7 +47,12 @@ export function parseRunnerResponse(line: string): PandocResponse | undefined {
   }
   if (response.success === false) {
     const error = response.error as Record<string, unknown> | null | undefined;
-    if (!error || typeof error !== 'object' || typeof error.code !== 'string' || typeof error.message !== 'string') {
+    if (
+      !error ||
+      typeof error !== 'object' ||
+      typeof error.code !== 'string' ||
+      typeof error.message !== 'string'
+    ) {
       return undefined;
     }
     return response as unknown as PandocResponse;
@@ -48,15 +64,20 @@ export function parseRunnerResponse(line: string): PandocResponse | undefined {
 export class PandocSocketClientImpl implements PandocSocketClient {
   constructor(
     private socketPath: string = '/tmp/pandoc-runner.sock',
-    private connect: SocketConnector = (socketPath) => createConnection(socketPath)
+    private connect: SocketConnector = (socketPath) =>
+      createConnection(socketPath)
   ) {}
 
-  async convert(input: string, fromFormat: string, toFormat: string): Promise<ConvertResult> {
+  async convert(
+    input: string,
+    fromFormat: string,
+    toFormat: string
+  ): Promise<ConvertResult> {
     const sent = await this.sendRequest({
       action: 'convert',
       content: input,
       from: fromFormat,
-      to: toFormat
+      to: toFormat,
     });
     if (!sent.ok) {
       return { ok: false, kind: sent.kind, detail: sent.detail };
@@ -68,17 +89,36 @@ export class PandocSocketClientImpl implements PandocSocketClient {
       switch (code) {
         case 'INVALID_REQUEST':
         case 'UNSUPPORTED_CONVERSION':
-          return { ok: false, kind: 'invalid_request', runnerCode: code, detail: message };
+          return {
+            ok: false,
+            kind: 'invalid_request',
+            runnerCode: code,
+            detail: message,
+          };
         case 'CONVERSION_ERROR':
-          return { ok: false, kind: 'conversion_failed', runnerCode: code, detail: message };
+          return {
+            ok: false,
+            kind: 'conversion_failed',
+            runnerCode: code,
+            detail: message,
+          };
         default:
           // INVALID_JSON / UNKNOWN_ACTION は app-server 自身が組み立てたリクエストで起きるため runner_error とする
-          return { ok: false, kind: 'runner_error', runnerCode: code, detail: message };
+          return {
+            ok: false,
+            kind: 'runner_error',
+            runnerCode: code,
+            detail: message,
+          };
       }
     }
 
     if (typeof response.data.result !== 'string') {
-      return { ok: false, kind: 'runner_error', detail: 'Convert response has no result' };
+      return {
+        ok: false,
+        kind: 'runner_error',
+        detail: 'Convert response has no result',
+      };
     }
     return { ok: true, output: response.data.result };
   }
@@ -113,24 +153,37 @@ export class PandocSocketClientImpl implements PandocSocketClient {
           }
           const response = parseRunnerResponse(responseData.slice(0, newline));
           if (!response) {
-            settle({ ok: false, kind: 'runner_error', detail: 'Invalid response from pandoc-runner' });
+            settle({
+              ok: false,
+              kind: 'runner_error',
+              detail: 'Invalid response from pandoc-runner',
+            });
             return;
           }
           settle({ ok: true, response });
         } catch (error) {
-          settle({ ok: false, kind: 'runner_error', detail: `Failed to handle response: ${error}` });
+          settle({
+            ok: false,
+            kind: 'runner_error',
+            detail: `Failed to handle response: ${error}`,
+          });
         }
       });
 
       socket.on('error', (error: NodeJS.ErrnoException) => {
-        const kind = error.code !== undefined && UNAVAILABLE_ERROR_CODES.has(error.code)
-          ? 'unavailable'
-          : 'runner_error';
+        const kind =
+          error.code !== undefined && UNAVAILABLE_ERROR_CODES.has(error.code)
+            ? 'unavailable'
+            : 'runner_error';
         settle({ ok: false, kind, detail: `Socket error: ${error.message}` });
       });
 
       socket.on('close', () => {
-        settle({ ok: false, kind: 'runner_error', detail: 'Socket closed without receiving complete response' });
+        settle({
+          ok: false,
+          kind: 'runner_error',
+          detail: 'Socket closed without receiving complete response',
+        });
       });
 
       // net.Socket は接続確立前の書き込みをバッファするため、connect イベントを待たずに書き込む

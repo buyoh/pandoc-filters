@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { installSignalHandlers, SignalTarget, StoppableServer } from '../SignalHandlers';
+import {
+  installSignalHandlers,
+  SignalTarget,
+  StoppableServer,
+} from '../SignalHandlers';
 import { SilentLogger } from './stubs';
 
 /** 登録されたシグナルハンドラーと exit の呼び出しを記録する SignalTarget のスタブ */
@@ -30,7 +34,10 @@ describe('installSignalHandlers', () => {
     // 以前は SIGINT/SIGTERM ハンドラーが二重に登録されていた
     const target = new StubSignalTarget();
     installSignalHandlers(target, new CountingServer(), new SilentLogger());
-    assert.deepStrictEqual(target.listeners.map((l) => l.signal), ['SIGINT', 'SIGTERM']);
+    assert.deepStrictEqual(
+      target.listeners.map((l) => l.signal),
+      ['SIGINT', 'SIGTERM']
+    );
   });
 
   it('stops the server and exits with code 0 on a signal', () => {

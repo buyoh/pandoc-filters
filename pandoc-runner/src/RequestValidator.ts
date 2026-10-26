@@ -15,13 +15,21 @@ function isNonEmptyString(value: unknown): value is string {
  */
 export function validateRequest(raw: unknown): ValidationResult {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { ok: false, code: 'INVALID_REQUEST', message: 'Request must be a JSON object' };
+    return {
+      ok: false,
+      code: 'INVALID_REQUEST',
+      message: 'Request must be a JSON object',
+    };
   }
 
   const request = raw as Record<string, unknown>;
 
   if (typeof request.action !== 'string') {
-    return { ok: false, code: 'INVALID_REQUEST', message: 'Request must include an action field' };
+    return {
+      ok: false,
+      code: 'INVALID_REQUEST',
+      message: 'Request must include an action field',
+    };
   }
 
   switch (request.action) {
@@ -30,12 +38,20 @@ export function validateRequest(raw: unknown): ValidationResult {
     case 'convert':
       break;
     default:
-      return { ok: false, code: 'UNKNOWN_ACTION', message: `Unknown action: ${request.action}` };
+      return {
+        ok: false,
+        code: 'UNKNOWN_ACTION',
+        message: `Unknown action: ${request.action}`,
+      };
   }
 
   for (const field of ['from', 'to'] as const) {
     if (!isNonEmptyString(request[field])) {
-      return { ok: false, code: 'INVALID_REQUEST', message: `Request must include ${field} field` };
+      return {
+        ok: false,
+        code: 'INVALID_REQUEST',
+        message: `Request must include ${field} field`,
+      };
     }
   }
 
@@ -43,7 +59,11 @@ export function validateRequest(raw: unknown): ValidationResult {
   // INTERNAL_ERROR で拒否していた。型のみを検証し、空文字は有効とする（pandoc は空出力を返す）。
   // 空入力の拒否は利用者側の責務
   if (typeof request.content !== 'string') {
-    return { ok: false, code: 'INVALID_REQUEST', message: 'Content must be a string' };
+    return {
+      ok: false,
+      code: 'INVALID_REQUEST',
+      message: 'Content must be a string',
+    };
   }
 
   return {
@@ -52,7 +72,7 @@ export function validateRequest(raw: unknown): ValidationResult {
       action: 'convert',
       from: request.from as string,
       to: request.to as string,
-      content: request.content
-    }
+      content: request.content,
+    },
   };
 }

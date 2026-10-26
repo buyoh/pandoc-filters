@@ -24,7 +24,17 @@ describe('parsePort', () => {
   });
 
   it('rejects non-decimal or out-of-range values', () => {
-    for (const value of ['', ' 80', '+80', '0x50', '80abc', '1.5', '0', '65536', '-1']) {
+    for (const value of [
+      '',
+      ' 80',
+      '+80',
+      '0x50',
+      '80abc',
+      '1.5',
+      '0',
+      '65536',
+      '-1',
+    ]) {
       assert.strictEqual(parsePort(value), undefined, value);
     }
   });
@@ -35,12 +45,19 @@ describe('parseArgs', () => {
     const repoAppServer = path.resolve(__dirname, '../..');
     assert.deepStrictEqual(parseArgs([], {}), {
       kind: 'ok',
-      config: { port: 3000, socketPath: DEFAULT_SOCKET_PATH, webAppPath: path.join(repoAppServer, 'web-simple') }
+      config: {
+        port: 3000,
+        socketPath: DEFAULT_SOCKET_PATH,
+        webAppPath: path.join(repoAppServer, 'web-simple'),
+      },
     });
   });
 
   it('applies --pandoc-socket-path and --port', () => {
-    const result = parseArgs(['--pandoc-socket-path', '/x.sock', '--port', '8080'], {});
+    const result = parseArgs(
+      ['--pandoc-socket-path', '/x.sock', '--port', '8080'],
+      {}
+    );
     assert.strictEqual(result.kind, 'ok');
     assert.strictEqual(result.config.socketPath, '/x.sock');
     assert.strictEqual(result.config.port, 8080);
@@ -70,7 +87,11 @@ describe('parseArgs', () => {
   it('rejects invalid --port values', () => {
     // 以前は parseInt で '80abc' を 80 として受理し、0 や 65536 も範囲検査なしで受理していた
     for (const value of ['80abc', '0', '65536', '1.5']) {
-      assert.match(assertError(['--port', value]), /--port requires an integer between 1 and 65535/, value);
+      assert.match(
+        assertError(['--port', value]),
+        /--port requires an integer between 1 and 65535/,
+        value
+      );
     }
   });
 
@@ -78,7 +99,10 @@ describe('parseArgs', () => {
     assertError(['--port']);
     assertError(['-p']);
     assertError(['--port', '--help']);
-    assert.match(assertError(['--pandoc-socket-path']), /--pandoc-socket-path requires a path argument/);
+    assert.match(
+      assertError(['--pandoc-socket-path']),
+      /--pandoc-socket-path requires a path argument/
+    );
   });
 
   it('rejects unknown options', () => {

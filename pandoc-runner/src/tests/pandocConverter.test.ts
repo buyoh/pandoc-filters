@@ -10,7 +10,10 @@ describe('PandocConverter', () => {
   let converter: PandocConverter;
 
   beforeEach(() => {
-    converter = new PandocConverter(mockCommandExecutor, new DefaultFilterSelector());
+    converter = new PandocConverter(
+      mockCommandExecutor,
+      new DefaultFilterSelector()
+    );
     jest.clearAllMocks();
   });
 
@@ -22,8 +25,12 @@ describe('PandocConverter', () => {
         exitCode: 0,
       });
 
-      await expect(converter.validatePandocAvailability()).resolves.not.toThrow();
-      expect(mockCommandExecutor.execute).toHaveBeenCalledWith('pandoc', ['--version']);
+      await expect(
+        converter.validatePandocAvailability()
+      ).resolves.not.toThrow();
+      expect(mockCommandExecutor.execute).toHaveBeenCalledWith('pandoc', [
+        '--version',
+      ]);
     });
 
     it('should throw when pandoc command fails', async () => {
@@ -33,14 +40,18 @@ describe('PandocConverter', () => {
         exitCode: 1,
       });
 
-      await expect(converter.validatePandocAvailability()).rejects.toThrow(ConversionError);
+      await expect(converter.validatePandocAvailability()).rejects.toThrow(
+        ConversionError
+      );
     });
 
     it('should throw when pandoc command not found', async () => {
       const notFoundError = new Error('ENOENT');
       mockCommandExecutor.execute.mockRejectedValue(notFoundError);
 
-      await expect(converter.validatePandocAvailability()).rejects.toThrow(ConversionError);
+      await expect(converter.validatePandocAvailability()).rejects.toThrow(
+        ConversionError
+      );
     });
   });
 
@@ -53,7 +64,8 @@ describe('PandocConverter', () => {
         exitCode: 0,
       });
 
-      const result = await converter.convertMarkdownToRedmineTextile('# Hello World');
+      const result =
+        await converter.convertMarkdownToRedmineTextile('# Hello World');
 
       expect(result).toBe(expectedOutput);
       expect(mockCommandExecutor.execute).toHaveBeenCalledWith(
@@ -70,21 +82,24 @@ describe('PandocConverter', () => {
         exitCode: 1,
       });
 
-      await expect(converter.convertMarkdownToRedmineTextile('# Hello'))
-        .rejects.toThrow(ConversionError);
+      await expect(
+        converter.convertMarkdownToRedmineTextile('# Hello')
+      ).rejects.toThrow(ConversionError);
     });
 
     it('should throw Error for invalid input type', async () => {
-      await expect((converter.convertMarkdownToRedmineTextile as any)(123))
-        .rejects.toThrow('markdownText must be a string');
+      await expect(
+        (converter.convertMarkdownToRedmineTextile as any)(123)
+      ).rejects.toThrow('markdownText must be a string');
     });
 
     it('should throw ConversionError when command not found', async () => {
       const notFoundError = new Error('ENOENT');
       mockCommandExecutor.execute.mockRejectedValue(notFoundError);
 
-      await expect(converter.convertMarkdownToRedmineTextile('# Hello'))
-        .rejects.toThrow(ConversionError);
+      await expect(
+        converter.convertMarkdownToRedmineTextile('# Hello')
+      ).rejects.toThrow(ConversionError);
     });
   });
 

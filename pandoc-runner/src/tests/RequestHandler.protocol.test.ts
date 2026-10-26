@@ -18,13 +18,23 @@ describe('RequestHandler protocol', () => {
   });
 
   it('returns INVALID_REQUEST when content is not a string', async () => {
-    const response = await handle(ok(), { action: 'convert', from: 'markdown', to: 'redmine-textile', content: 1 });
+    const response = await handle(ok(), {
+      action: 'convert',
+      from: 'markdown',
+      to: 'redmine-textile',
+      content: 1,
+    });
     assert.strictEqual(response.error.code, 'INVALID_REQUEST');
   });
 
   it('accepts empty content', async () => {
     const converter = ok();
-    const response = await handle(converter, { action: 'convert', from: 'markdown', to: 'redmine-textile', content: '' });
+    const response = await handle(converter, {
+      action: 'convert',
+      from: 'markdown',
+      to: 'redmine-textile',
+      content: '',
+    });
     assert.strictEqual(response.success, true);
     assert.deepStrictEqual(converter.received, ['']);
   });
@@ -36,8 +46,16 @@ describe('RequestHandler protocol', () => {
   });
 
   it('returns CONVERSION_ERROR when the converter fails', async () => {
-    const converter = new StubMarkdownConverter({ ok: false, message: 'pandoc failed' });
-    const response = await handle(converter, { action: 'convert', from: 'markdown', to: 'redmine-textile', content: '# x' });
+    const converter = new StubMarkdownConverter({
+      ok: false,
+      message: 'pandoc failed',
+    });
+    const response = await handle(converter, {
+      action: 'convert',
+      from: 'markdown',
+      to: 'redmine-textile',
+      content: '# x',
+    });
     assert.strictEqual(response.error.code, 'CONVERSION_ERROR');
     assert.match(response.error.message, /pandoc failed/);
   });

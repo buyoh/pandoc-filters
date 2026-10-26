@@ -7,7 +7,7 @@ import {
   MarkdownConverter,
   PandocAvailabilityValidator,
   RequestLineHandler,
-  SocketServer
+  SocketServer,
 } from '../types';
 
 /**
@@ -21,7 +21,11 @@ export class StubSocket extends Duplex {
 
   _read(): void {}
 
-  _write(chunk: Buffer, _encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+  _write(
+    chunk: Buffer,
+    _encoding: BufferEncoding,
+    callback: (error?: Error | null) => void
+  ): void {
     this.written += chunk.toString('utf8');
     callback();
   }
@@ -57,7 +61,9 @@ export class StubMarkdownConverter implements MarkdownConverter {
 
   constructor(private outcome: ConversionOutcome) {}
 
-  async convertMarkdownToRedmineTextile(markdownText: string): Promise<ConversionOutcome> {
+  async convertMarkdownToRedmineTextile(
+    markdownText: string
+  ): Promise<ConversionOutcome> {
     this.received.push(markdownText);
     return this.outcome;
   }
@@ -113,7 +119,9 @@ export class StubSocketServer implements SocketServer {
   /** @param startError start で投げるエラー。undefined なら start 成功 */
   constructor(private startError?: Error) {}
 
-  async start(requestHandler: (requestLine: string) => Promise<string>): Promise<void> {
+  async start(
+    requestHandler: (requestLine: string) => Promise<string>
+  ): Promise<void> {
     if (this.startError) {
       throw this.startError;
     }
@@ -126,7 +134,10 @@ export class StubSocketServer implements SocketServer {
 }
 
 /** 条件が満たされるまで待つ（タイムアウトで失敗） */
-export async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
+export async function waitFor(
+  predicate: () => boolean,
+  timeoutMs = 2000
+): Promise<void> {
   const startMs = Date.now();
   while (!predicate()) {
     if (Date.now() - startMs > timeoutMs) {

@@ -91,7 +91,9 @@ export type ConversionOutcome =
 
 /** markdown → redmine-textile 変換を提供するインターフェース（RequestHandler の依存） */
 export interface MarkdownConverter {
-  convertMarkdownToRedmineTextile(markdownText: string): Promise<ConversionOutcome>;
+  convertMarkdownToRedmineTextile(
+    markdownText: string
+  ): Promise<ConversionOutcome>;
 }
 
 /** 起動時に pandoc が利用可能か検査するインターフェース（PandocRunnerServer の依存） */
@@ -108,7 +110,9 @@ export interface RequestLineHandler {
 /** リクエストを受け付けるソケットサーバーのインターフェース（PandocRunnerServer の依存） */
 export interface SocketServer {
   /** listen を開始する。開始できない場合は reject する */
-  start(requestHandler: (requestLine: string) => Promise<string>): Promise<void>;
+  start(
+    requestHandler: (requestLine: string) => Promise<string>
+  ): Promise<void>;
   stop(): Promise<void>;
 }
 

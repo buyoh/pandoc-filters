@@ -6,7 +6,10 @@ function clientErrorStatus(err: unknown): number | undefined {
     return undefined;
   }
   // body-parser 等（http-errors）は 4xx の場合 err.status / err.statusCode を設定する
-  const { status, statusCode } = err as { status?: unknown; statusCode?: unknown };
+  const { status, statusCode } = err as {
+    status?: unknown;
+    statusCode?: unknown;
+  };
   const value = typeof status === 'number' ? status : statusCode;
   if (typeof value === 'number' && value >= 400 && value < 500) {
     return value;
@@ -32,7 +35,12 @@ function clientErrorMessage(status: number): string {
  * err.message（内部パス等を含み得る）をクライアントに返していた。
  * 4xx は status を引き継いで固定文言を返し、詳細はログのみに出力する。
  */
-export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction): void {
+export function errorHandler(
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   if (res.headersSent) {
     next(err);
     return;
@@ -43,8 +51,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   const status = clientErrorStatus(err);
   const body: ApiErrorResponse = {
     success: false,
-    error: status !== undefined ? clientErrorMessage(status) : 'Internal server error',
-    timestamp: new Date().toISOString()
+    error:
+      status !== undefined
+        ? clientErrorMessage(status)
+        : 'Internal server error',
+    timestamp: new Date().toISOString(),
   };
   res.status(status ?? 500).json(body);
 }

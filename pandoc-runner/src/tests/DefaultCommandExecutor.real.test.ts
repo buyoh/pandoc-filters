@@ -12,7 +12,7 @@ describe('DefaultCommandExecutor (real process)', () => {
     const count = 100000;
     const result = await executor.execute(process.execPath, [
       '-e',
-      `process.stdout.write('あ'.repeat(${count}))`
+      `process.stdout.write('あ'.repeat(${count}))`,
     ]);
     assert.strictEqual(result.exitCode, 0);
     assert.strictEqual(result.stdout.includes('�'), false);
@@ -22,7 +22,7 @@ describe('DefaultCommandExecutor (real process)', () => {
   it('reports signal termination instead of exit code 0', async () => {
     const result = await executor.execute(process.execPath, [
       '-e',
-      "process.kill(process.pid, 'SIGKILL')"
+      "process.kill(process.pid, 'SIGKILL')",
     ]);
     assert.strictEqual(result.exitCode, null);
     assert.strictEqual(result.signal, 'SIGKILL');
@@ -31,7 +31,11 @@ describe('DefaultCommandExecutor (real process)', () => {
   it('does not crash when the child exits without reading stdin', async () => {
     // 4MiB はパイプバッファ (64KiB) を十分に超えるため、子の終了後の書き込みで EPIPE が発生する
     const stdin = 'x'.repeat(4 * 1024 * 1024);
-    const result = await executor.execute(process.execPath, ['-e', 'process.exit(3)'], { stdin });
+    const result = await executor.execute(
+      process.execPath,
+      ['-e', 'process.exit(3)'],
+      { stdin }
+    );
     assert.strictEqual(result.exitCode, 3);
     assert.strictEqual(result.signal, null);
   });

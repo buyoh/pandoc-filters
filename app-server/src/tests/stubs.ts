@@ -11,7 +11,11 @@ export class StubSocket extends Duplex {
 
   _read(): void {}
 
-  _write(chunk: Buffer, _encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+  _write(
+    chunk: Buffer,
+    _encoding: BufferEncoding,
+    callback: (error?: Error | null) => void
+  ): void {
     this.written += chunk.toString('utf8');
     callback();
   }
@@ -55,12 +59,18 @@ export class StubPandocSocketClient implements PandocSocketClient {
   /** convert の呼び出し回数 */
   callCount = 0;
   /** 最後の convert 呼び出しの引数。一度も呼ばれていない場合は undefined */
-  lastArgs: { input: string; fromFormat: string; toFormat: string } | undefined = undefined;
+  lastArgs:
+    | { input: string; fromFormat: string; toFormat: string }
+    | undefined = undefined;
 
   /** convert の振る舞い。テスト中に差し替えてよい */
   constructor(public behavior: { result: ConvertResult } | { error: Error }) {}
 
-  async convert(input: string, fromFormat: string, toFormat: string): Promise<ConvertResult> {
+  async convert(
+    input: string,
+    fromFormat: string,
+    toFormat: string
+  ): Promise<ConvertResult> {
     this.callCount++;
     this.lastArgs = { input, fromFormat, toFormat };
     if ('error' in this.behavior) {

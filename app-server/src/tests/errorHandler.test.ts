@@ -6,22 +6,31 @@ import { RecordingResponse } from './stubs';
 
 function handle(err: unknown, res = new RecordingResponse()) {
   let nextArg: unknown = 'not called';
-  errorHandler(err, {} as Request, res as unknown as Response, (arg?: unknown) => {
-    nextArg = arg;
-  });
+  errorHandler(
+    err,
+    {} as Request,
+    res as unknown as Response,
+    (arg?: unknown) => {
+      nextArg = arg;
+    }
+  );
   return { res, nextArg };
 }
 
 describe('errorHandler', () => {
   it('returns 400 for body-parser errors', () => {
-    const { res } = handle(Object.assign(new Error('Unexpected token } in JSON'), { status: 400 }));
+    const { res } = handle(
+      Object.assign(new Error('Unexpected token } in JSON'), { status: 400 })
+    );
     assert.strictEqual(res.statusCode, 400);
     assert.strictEqual(res.body.error, 'Bad request');
     assert.strictEqual(res.body.success, false);
   });
 
   it('returns 413 for payload too large errors', () => {
-    const { res } = handle(Object.assign(new Error('request entity too large'), { statusCode: 413 }));
+    const { res } = handle(
+      Object.assign(new Error('request entity too large'), { statusCode: 413 })
+    );
     assert.strictEqual(res.statusCode, 413);
     assert.strictEqual(res.body.error, 'Payload too large');
   });

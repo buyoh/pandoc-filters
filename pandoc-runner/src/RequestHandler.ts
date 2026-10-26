@@ -3,7 +3,7 @@ import {
   ConversionResult,
   MarkdownConverter,
   PingResult,
-  RequestLineHandler
+  RequestLineHandler,
 } from './types';
 import { validateRequest } from './RequestValidator';
 import { createErrorResponse, createSuccessResponse } from './responses';
@@ -56,7 +56,9 @@ export class RequestHandler implements RequestLineHandler {
    * @param request 検証済みのリクエスト
    * @returns JSONレスポンス文字列
    */
-  private async handleConvertRequest(request: ConversionRequest): Promise<string> {
+  private async handleConvertRequest(
+    request: ConversionRequest
+  ): Promise<string> {
     const { from: fromFormat, to: toFormat, content } = request;
 
     // 現在はmarkdown -> redmine-textileのみサポート
@@ -67,15 +69,19 @@ export class RequestHandler implements RequestLineHandler {
       );
     }
 
-    const outcome = await this.converter.convertMarkdownToRedmineTextile(content);
+    const outcome =
+      await this.converter.convertMarkdownToRedmineTextile(content);
     if (!outcome.ok) {
-      return createErrorResponse(`Conversion failed: ${outcome.message}`, 'CONVERSION_ERROR');
+      return createErrorResponse(
+        `Conversion failed: ${outcome.message}`,
+        'CONVERSION_ERROR'
+      );
     }
 
     return createSuccessResponse<ConversionResult>({
       result: outcome.output,
       from: fromFormat,
-      to: toFormat
+      to: toFormat,
     });
   }
 

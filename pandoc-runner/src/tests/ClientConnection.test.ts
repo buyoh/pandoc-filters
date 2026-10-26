@@ -7,10 +7,14 @@ describe('ClientConnection', () => {
   it('decodes a multibyte character split across chunks', async () => {
     const socket = new StubSocket();
     const received: string[] = [];
-    new ClientConnection(socket, async (line) => {
-      received.push(line);
-      return 'ok';
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async (line) => {
+        received.push(line);
+        return 'ok';
+      },
+      new SilentLogger()
+    );
 
     // 「あ」= e3 81 82 をチャンク境界で分割する
     const request = Buffer.from('{"content":"あ"}\n', 'utf8');
@@ -24,12 +28,16 @@ describe('ClientConnection', () => {
 
   it('responds in request order even if an earlier request finishes later', async () => {
     const socket = new StubSocket();
-    new ClientConnection(socket, async (line) => {
-      if (line === 'slow') {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-      return `done:${line}`;
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async (line) => {
+        if (line === 'slow') {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        return `done:${line}`;
+      },
+      new SilentLogger()
+    );
 
     socket.receive(Buffer.from('slow\nfast\n'));
 
@@ -39,12 +47,16 @@ describe('ClientConnection', () => {
 
   it('returns INTERNAL_ERROR and keeps processing when the handler rejects', async () => {
     const socket = new StubSocket();
-    new ClientConnection(socket, async (line) => {
-      if (line === 'bad') {
-        throw new Error('boom');
-      }
-      return `done:${line}`;
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async (line) => {
+        if (line === 'bad') {
+          throw new Error('boom');
+        }
+        return `done:${line}`;
+      },
+      new SilentLogger()
+    );
 
     socket.receive(Buffer.from('bad\ngood\n'));
 
@@ -60,12 +72,16 @@ describe('ClientConnection', () => {
     const socket = new StubSocket();
     let started = false;
     let handled = false;
-    new ClientConnection(socket, async () => {
-      started = true;
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      handled = true;
-      return 'late';
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async () => {
+        started = true;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        handled = true;
+        return 'late';
+      },
+      new SilentLogger()
+    );
 
     socket.receive(Buffer.from('req\n'));
     // 処理中（handler 実行中）に切断する
@@ -80,11 +96,15 @@ describe('ClientConnection', () => {
   it('does not process queued requests after the client disconnected', async () => {
     const socket = new StubSocket();
     const handled: string[] = [];
-    new ClientConnection(socket, async (line) => {
-      handled.push(line);
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return 'done';
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async (line) => {
+        handled.push(line);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return 'done';
+      },
+      new SilentLogger()
+    );
 
     socket.receive(Buffer.from('first\nsecond\n'));
     await waitFor(() => handled.length === 1);
@@ -96,10 +116,14 @@ describe('ClientConnection', () => {
 
   it('responds to pending requests and then ends the socket on half-close', async () => {
     const socket = new StubSocket();
-    new ClientConnection(socket, async (line) => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return `done:${line}`;
-    }, new SilentLogger());
+    new ClientConnection(
+      socket,
+      async (line) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return `done:${line}`;
+      },
+      new SilentLogger()
+    );
 
     socket.receive(Buffer.from('req\n'));
     socket.receiveEnd();

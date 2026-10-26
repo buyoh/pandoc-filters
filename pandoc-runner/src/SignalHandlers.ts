@@ -14,7 +14,11 @@ export interface StoppableServer {
 /**
  * SIGINT / SIGTERM 受信時にサーバーを停止してプロセスを終了するハンドラーを登録する
  */
-export function installSignalHandlers(target: SignalTarget, server: StoppableServer, logger: Logger): void {
+export function installSignalHandlers(
+  target: SignalTarget,
+  server: StoppableServer,
+  logger: Logger
+): void {
   // バグ修正: 以前は index.ts と PandocRunnerServer の双方が SIGINT/SIGTERM ハンドラーを登録しており、
   // 停止処理が二重に走っていた。プロセス全体に関わるシグナル処理は composition root からのみ、この関数で登録する。
   // 接続中のクライアントを待つと終了しない可能性があるため、停止の完了を待たずに終了する。

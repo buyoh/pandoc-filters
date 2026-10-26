@@ -36,7 +36,10 @@ export function createApp(deps: AppDependencies): Express {
 
   // API Routes
   const conversionController = new ConversionController(deps.pandocClient);
-  app.post('/api/v1/sync/convert', conversionController.convertSync.bind(conversionController));
+  app.post(
+    '/api/v1/sync/convert',
+    conversionController.convertSync.bind(conversionController)
+  );
 
   // Health check
   app.get('/health', (req, res) => {
@@ -65,7 +68,7 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/api', (req, res) => {
     res.status(404).json({
       error: 'Not Found',
-      message: `API route ${req.method} ${req.originalUrl.split('?')[0]} not found`
+      message: `API route ${req.method} ${req.originalUrl.split('?')[0]} not found`,
     });
   });
 

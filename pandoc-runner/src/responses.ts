@@ -8,7 +8,7 @@ export function createSuccessResponse<T>(data: T): string {
   const response: SuccessResponse<T> = {
     success: true,
     data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   return JSON.stringify(response);
 }
@@ -23,9 +23,9 @@ export function createErrorResponse(message: string, code: ErrorCode): string {
     success: false,
     error: {
       message,
-      code
+      code,
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   return JSON.stringify(response);
 }

@@ -25,7 +25,7 @@ function main(): void {
   // composition root: 具象クラスの組み立てはここだけで行う
   const app = createApp({
     pandocClient: new PandocSocketClientImpl(config.socketPath),
-    webAppPath: config.webAppPath
+    webAppPath: config.webAppPath,
   });
   const server = createServer(app);
 

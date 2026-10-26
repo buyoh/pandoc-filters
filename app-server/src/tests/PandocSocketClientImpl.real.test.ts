@@ -26,11 +26,13 @@ describe('PandocSocketClientImpl (real socket)', () => {
         const newline = data.indexOf('\n');
         if (newline >= 0) {
           const request = JSON.parse(data.slice(0, newline));
-          socket.end(JSON.stringify({
-            success: true,
-            data: { result: `converted:${request.content}` },
-            timestamp: new Date().toISOString()
-          }) + '\n');
+          socket.end(
+            JSON.stringify({
+              success: true,
+              data: { result: `converted:${request.content}` },
+              timestamp: new Date().toISOString(),
+            }) + '\n'
+          );
         }
       });
     });
@@ -43,12 +45,18 @@ describe('PandocSocketClientImpl (real socket)', () => {
 
   it('round-trips a request over a Unix socket', async () => {
     const client = new PandocSocketClientImpl(socketPath);
-    const result = await client.convert('日本語', 'markdown', 'redmine-textile');
+    const result = await client.convert(
+      '日本語',
+      'markdown',
+      'redmine-textile'
+    );
     assert.deepStrictEqual(result, { ok: true, output: 'converted:日本語' });
   });
 
   it('returns unavailable when the socket does not exist', async () => {
-    const client = new PandocSocketClientImpl(path.join(tmpDir, `as-missing-${process.pid}.sock`));
+    const client = new PandocSocketClientImpl(
+      path.join(tmpDir, `as-missing-${process.pid}.sock`)
+    );
     const result = await client.convert('x', 'markdown', 'redmine-textile');
     assert.strictEqual(result.ok, false);
     assert.strictEqual(!result.ok && result.kind, 'unavailable');

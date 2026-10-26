@@ -2,9 +2,17 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { PandocRunnerServer } from '../PandocRunnerServer';
 import { ConversionError } from '../types';
-import { EchoRequestHandler, SilentLogger, StubPandocValidator, StubSocketServer } from './stubs';
+import {
+  EchoRequestHandler,
+  SilentLogger,
+  StubPandocValidator,
+  StubSocketServer,
+} from './stubs';
 
-function createServer(validator: StubPandocValidator, socketServer: StubSocketServer) {
+function createServer(
+  validator: StubPandocValidator,
+  socketServer: StubSocketServer
+) {
   const requestHandler = new EchoRequestHandler();
   const server = new PandocRunnerServer({
     pandocValidator: validator,
@@ -26,13 +34,19 @@ describe('PandocRunnerServer', () => {
     assert.strictEqual(validator.calls, 1);
     assert.strictEqual(server.isRunning(), true);
     assert.ok(socketServer.handler);
-    assert.strictEqual(await socketServer.handler('{"action":"ping"}'), 'echo:{"action":"ping"}');
+    assert.strictEqual(
+      await socketServer.handler('{"action":"ping"}'),
+      'echo:{"action":"ping"}'
+    );
     assert.deepStrictEqual(requestHandler.received, ['{"action":"ping"}']);
   });
 
   it('does not start the socket server when pandoc is unavailable', async () => {
     const socketServer = new StubSocketServer();
-    const { server } = createServer(new StubPandocValidator(new ConversionError('pandoc command not found')), socketServer);
+    const { server } = createServer(
+      new StubPandocValidator(new ConversionError('pandoc command not found')),
+      socketServer
+    );
 
     await assert.rejects(server.start(), ConversionError);
 

@@ -6,7 +6,11 @@ import { DefaultCommandExecutor } from './CommandExecutor';
 import { RequestHandler } from './RequestHandler';
 import { UnixSocketServer } from './UnixSocketServer';
 import { DefaultLogger } from './Logger';
-import { DEFAULT_SOCKET_PATH, resolveRunnerConfig, validateRunnerConfig } from './RunnerConfig';
+import {
+  DEFAULT_SOCKET_PATH,
+  resolveRunnerConfig,
+  validateRunnerConfig,
+} from './RunnerConfig';
 import { installSignalHandlers } from './SignalHandlers';
 import { ConversionError } from './types';
 
@@ -44,7 +48,9 @@ async function main(): Promise<void> {
   });
   if (!validation.ok) {
     console.error(`Error: ${validation.message}`);
-    console.error('Build the filter (pnpm build at the repository root) or set PF_FILTER_PATH');
+    console.error(
+      'Build the filter (pnpm build at the repository root) or set PF_FILTER_PATH'
+    );
     process.exit(1);
   }
 
@@ -66,7 +72,9 @@ async function main(): Promise<void> {
   } catch (error) {
     if (error instanceof ConversionError) {
       console.error(`Error: ${error.message}`);
-      console.error('Please make sure pandoc is installed and available in PATH (or set PF_PANDOC_PATH)');
+      console.error(
+        'Please make sure pandoc is installed and available in PATH (or set PF_PANDOC_PATH)'
+      );
     } else {
       console.error(`Unexpected error: ${error}`);
     }

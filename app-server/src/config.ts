@@ -50,9 +50,14 @@ export function parsePort(value: string): number | undefined {
 }
 
 /** オプションの値を取り出す。値が無い・次のオプションが続く場合は undefined */
-function optionValue(args: readonly string[], index: number): string | undefined {
+function optionValue(
+  args: readonly string[],
+  index: number
+): string | undefined {
   const value = args[index + 1];
-  return value !== undefined && value.length > 0 && !value.startsWith('-') ? value : undefined;
+  return value !== undefined && value.length > 0 && !value.startsWith('-')
+    ? value
+    : undefined;
 }
 
 /**
@@ -60,7 +65,10 @@ function optionValue(args: readonly string[], index: number): string | undefined
  * @param args コマンドライン引数（process.argv.slice(2) 相当。node / スクリプトのパスは含まない）
  * @param env 参照する環境変数（通常は process.env）。PORT のみ参照する
  */
-export function parseArgs(args: readonly string[], env: NodeJS.ProcessEnv): ParseArgsResult {
+export function parseArgs(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv
+): ParseArgsResult {
   let socketPath = DEFAULT_SOCKET_PATH;
   let port: number | undefined;
 
@@ -70,7 +78,10 @@ export function parseArgs(args: readonly string[], env: NodeJS.ProcessEnv): Pars
     if (arg === '--pandoc-socket-path') {
       const value = optionValue(args, i);
       if (value === undefined) {
-        return { kind: 'error', message: '--pandoc-socket-path requires a path argument' };
+        return {
+          kind: 'error',
+          message: '--pandoc-socket-path requires a path argument',
+        };
       }
       socketPath = value;
       i++;
@@ -78,7 +89,10 @@ export function parseArgs(args: readonly string[], env: NodeJS.ProcessEnv): Pars
       const value = optionValue(args, i);
       port = value !== undefined ? parsePort(value) : undefined;
       if (port === undefined) {
-        return { kind: 'error', message: `--port requires an integer between 1 and ${MAX_PORT}` };
+        return {
+          kind: 'error',
+          message: `--port requires an integer between 1 and ${MAX_PORT}`,
+        };
       }
       i++;
     } else if (arg === '--help' || arg === '-h') {
@@ -97,10 +111,16 @@ export function parseArgs(args: readonly string[], env: NodeJS.ProcessEnv): Pars
     } else {
       port = parsePort(envPort);
       if (port === undefined) {
-        return { kind: 'error', message: `PORT environment variable must be an integer between 1 and ${MAX_PORT}` };
+        return {
+          kind: 'error',
+          message: `PORT environment variable must be an integer between 1 and ${MAX_PORT}`,
+        };
       }
     }
   }
 
-  return { kind: 'ok', config: { port, socketPath, webAppPath: DEFAULT_WEB_APP_PATH } };
+  return {
+    kind: 'ok',
+    config: { port, socketPath, webAppPath: DEFAULT_WEB_APP_PATH },
+  };
 }

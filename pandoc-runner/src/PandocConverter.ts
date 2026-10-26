@@ -5,11 +5,14 @@ import {
   ConversionError,
   ConversionOutcome,
   MarkdownConverter,
-  PandocAvailabilityValidator
+  PandocAvailabilityValidator,
 } from './types';
 
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
+  return (
+    error instanceof Error &&
+    typeof (error as NodeJS.ErrnoException).code === 'string'
+  );
 }
 
 /**
@@ -38,7 +41,9 @@ export class DefaultFilterSelector implements FilterSelector {
 /**
  * pandocコマンドを実行してmarkdownからredmine-textileに変換するクラス
  */
-export class PandocConverter implements MarkdownConverter, PandocAvailabilityValidator {
+export class PandocConverter
+  implements MarkdownConverter, PandocAvailabilityValidator
+{
   private commandExecutor: CommandExecutor;
   private filterSelector: FilterSelector;
   /** pandoc 実行ファイルのパス（RunnerConfig.pandocPath） */
@@ -59,7 +64,9 @@ export class PandocConverter implements MarkdownConverter, PandocAvailabilityVal
    */
   async validatePandocAvailability(): Promise<void> {
     try {
-      const result = await this.commandExecutor.execute(this.pandocPath, ['--version']);
+      const result = await this.commandExecutor.execute(this.pandocPath, [
+        '--version',
+      ]);
       if (result.exitCode !== 0) {
         throw new ConversionError('pandoc command not available');
       }
@@ -75,8 +82,13 @@ export class PandocConverter implements MarkdownConverter, PandocAvailabilityVal
    * markdownからredmine-textileに変換する。pandoc の失敗は戻り値で返す
    * @param markdownText 変換元のmarkdownテキスト
    */
-  async convertMarkdownToRedmineTextile(markdownText: string): Promise<ConversionOutcome> {
-    const filterPath = this.filterSelector.getFilterPath('markdown', 'redmine-textile');
+  async convertMarkdownToRedmineTextile(
+    markdownText: string
+  ): Promise<ConversionOutcome> {
+    const filterPath = this.filterSelector.getFilterPath(
+      'markdown',
+      'redmine-textile'
+    );
     const commandArgs = ['-f', 'markdown', '-t', 'textile'];
 
     if (filterPath) {
@@ -85,7 +97,11 @@ export class PandocConverter implements MarkdownConverter, PandocAvailabilityVal
 
     let result: CommandResult;
     try {
-      result = await this.commandExecutor.execute(this.pandocPath, commandArgs, { stdin: markdownText });
+      result = await this.commandExecutor.execute(
+        this.pandocPath,
+        commandArgs,
+        { stdin: markdownText }
+      );
     } catch (error) {
       // コマンドを起動できない（ENOENT 等）。execute の reject のみを変換失敗として扱う
       if (isErrnoException(error) && error.code === 'ENOENT') {
@@ -95,10 +111,16 @@ export class PandocConverter implements MarkdownConverter, PandocAvailabilityVal
     }
 
     if (result.signal !== null) {
-      return { ok: false, message: `Pandoc was terminated by signal ${result.signal}: ${result.stderr.trim()}` };
+      return {
+        ok: false,
+        message: `Pandoc was terminated by signal ${result.signal}: ${result.stderr.trim()}`,
+      };
     }
     if (result.exitCode !== 0) {
-      return { ok: false, message: `Pandoc conversion failed (exit code ${result.exitCode}): ${result.stderr.trim()}` };
+      return {
+        ok: false,
+        message: `Pandoc conversion failed (exit code ${result.exitCode}): ${result.stderr.trim()}`,
+      };
     }
 
     // 以前は CommandExecutor が stdout 全体を trim() しており、先頭のインデント等が失われていた。

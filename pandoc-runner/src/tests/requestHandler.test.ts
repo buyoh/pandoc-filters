@@ -18,13 +18,15 @@ describe('RequestHandler', () => {
   describe('handleRequest', () => {
     it('should handle convert request successfully', async () => {
       const mockResult = 'converted textile content';
-      mockConverter.convertMarkdownToRedmineTextile.mockResolvedValue(mockResult);
+      mockConverter.convertMarkdownToRedmineTextile.mockResolvedValue(
+        mockResult
+      );
 
       const request = JSON.stringify({
         action: 'convert',
         from: 'markdown',
         to: 'redmine-textile',
-        content: '# Hello World'
+        content: '# Hello World',
       });
 
       const response = await handler.handleRequest(request);
@@ -34,7 +36,9 @@ describe('RequestHandler', () => {
       expect(parsedResponse.data.result).toBe(mockResult);
       expect(parsedResponse.data.from).toBe('markdown');
       expect(parsedResponse.data.to).toBe('redmine-textile');
-      expect(mockConverter.convertMarkdownToRedmineTextile).toHaveBeenCalledWith('# Hello World');
+      expect(
+        mockConverter.convertMarkdownToRedmineTextile
+      ).toHaveBeenCalledWith('# Hello World');
     });
 
     it('should handle ping request', async () => {
@@ -70,7 +74,7 @@ describe('RequestHandler', () => {
         action: 'convert',
         from: 'html',
         to: 'markdown',
-        content: '<h1>Hello</h1>'
+        content: '<h1>Hello</h1>',
       });
 
       const response = await handler.handleRequest(request);
@@ -82,13 +86,15 @@ describe('RequestHandler', () => {
 
     it('should handle conversion error', async () => {
       const errorMessage = 'Pandoc failed';
-      mockConverter.convertMarkdownToRedmineTextile.mockRejectedValue(new ConversionError(errorMessage));
+      mockConverter.convertMarkdownToRedmineTextile.mockRejectedValue(
+        new ConversionError(errorMessage)
+      );
 
       const request = JSON.stringify({
         action: 'convert',
         from: 'markdown',
         to: 'redmine-textile',
-        content: '# Hello'
+        content: '# Hello',
       });
 
       const response = await handler.handleRequest(request);
@@ -102,7 +108,7 @@ describe('RequestHandler', () => {
     it('should handle missing required fields', async () => {
       const request = JSON.stringify({
         action: 'convert',
-        from: 'markdown'
+        from: 'markdown',
         // missing 'to' and 'content'
       });
 

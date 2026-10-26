@@ -4,9 +4,9 @@
  */
 export interface PandocRequest {
   action: 'convert';
-  content: string;  // 変換対象のテキスト
-  from: string;     // 変換元フォーマット（例: 'markdown'）
-  to: string;       // 変換先フォーマット（例: 'redmine-textile'）
+  content: string; // 変換対象のテキスト
+  from: string; // 変換元フォーマット（例: 'markdown'）
+  to: string; // 変換先フォーマット（例: 'redmine-textile'）
 }
 
 /** pandoc-runner からの成功レスポンス */
@@ -22,17 +22,17 @@ export interface PandocSuccessResponse {
     /** 変換先フォーマット。convert の応答にのみ存在する */
     to?: string;
   };
-  timestamp: string;   // ISO8601形式のタイムスタンプ
+  timestamp: string; // ISO8601形式のタイムスタンプ
 }
 
 /** pandoc-runner からのエラーレスポンス */
 export interface PandocErrorResponse {
   success: false;
   error: {
-    message: string;   // エラーメッセージ
-    code: string;      // エラーコード（例: 'CONVERSION_ERROR'）
+    message: string; // エラーメッセージ
+    code: string; // エラーコード（例: 'CONVERSION_ERROR'）
   };
-  timestamp: string;   // ISO8601形式のタイムスタンプ
+  timestamp: string; // ISO8601形式のタイムスタンプ
 }
 
 /**
@@ -43,10 +43,10 @@ export type PandocResponse = PandocSuccessResponse | PandocErrorResponse;
 
 /** convert の失敗の種類。HTTP ステータスへの対応付けに使う */
 export type ConvertFailureKind =
-  | 'invalid_request'    // runner が INVALID_REQUEST / UNSUPPORTED_CONVERSION を返した
-  | 'conversion_failed'  // runner が CONVERSION_ERROR を返した
-  | 'unavailable'        // runner に接続できない・過負荷（ENOENT / ECONNREFUSED / EACCES / ENOTSOCK / EAGAIN）
-  | 'runner_error';      // 上記以外の通信エラー、応答の解析失敗・形が不正、完全な応答前の切断、その他の runner エラーコード、convert 成功応答に result が無い
+  | 'invalid_request' // runner が INVALID_REQUEST / UNSUPPORTED_CONVERSION を返した
+  | 'conversion_failed' // runner が CONVERSION_ERROR を返した
+  | 'unavailable' // runner に接続できない・過負荷（ENOENT / ECONNREFUSED / EACCES / ENOTSOCK / EAGAIN）
+  | 'runner_error'; // 上記以外の通信エラー、応答の解析失敗・形が不正、完全な応答前の切断、その他の runner エラーコード、convert 成功応答に result が無い
 
 /** convert の結果。失敗はドメイン上想定される失敗として戻り値で返す */
 export type ConvertResult =
@@ -94,5 +94,9 @@ export interface ConvertData {
  * テスト用スタブ: StubPandocSocketClient（tests/stubs.ts）
  */
 export interface PandocSocketClient {
-  convert(input: string, fromFormat: string, toFormat: string): Promise<ConvertResult>;
+  convert(
+    input: string,
+    fromFormat: string,
+    toFormat: string
+  ): Promise<ConvertResult>;
 }

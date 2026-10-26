@@ -22,10 +22,12 @@ export class UnixSocketServer implements SocketServer {
    * サーバーを開始する
    * @param requestHandler リクエストを処理するコールバック関数
    */
-  async start(requestHandler: (requestLine: string) => Promise<string>): Promise<void> {
+  async start(
+    requestHandler: (requestLine: string) => Promise<string>
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.cleanupSocket();
-      
+
       // allowHalfOpen: 既定（false）ではクライアントが送信後に end()（FIN）すると
       // サーバ側の書き込みも閉じられ、応答を返せない。ClientConnection が応答後に閉じる
       this.server = net.createServer({ allowHalfOpen: true });
@@ -57,7 +59,7 @@ export class UnixSocketServer implements SocketServer {
 
     return new Promise((resolve) => {
       this.running = false;
-      
+
       this.server!.close(() => {
         this.cleanupSocket();
         this.logger.info('UnixSocket server stopped');
