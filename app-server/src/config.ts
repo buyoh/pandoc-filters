@@ -100,7 +100,7 @@ export function parseArgs(
     } else if (arg.startsWith('-')) {
       return { kind: 'error', message: `Unknown option '${arg}'` };
     }
-    // それ以外の位置引数は無視する（以前の実装と同じ）
+    // 位置引数は無視する
   }
 
   // --port が指定されていれば PORT は使わないため検証もしない（上書きされる値で起動を止めない）

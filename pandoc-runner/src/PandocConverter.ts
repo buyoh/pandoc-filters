@@ -44,20 +44,14 @@ export class DefaultFilterSelector implements FilterSelector {
 export class PandocConverter
   implements MarkdownConverter, PandocAvailabilityValidator
 {
-  private commandExecutor: CommandExecutor;
-  private filterSelector: FilterSelector;
-  /** pandoc 実行ファイルのパス（RunnerConfig.pandocPath） */
-  private pandocPath: string;
-
+  /**
+   * @param pandocPath pandoc 実行ファイルのパス（RunnerConfig.pandocPath）
+   */
   constructor(
-    commandExecutor: CommandExecutor,
-    filterSelector: FilterSelector,
-    pandocPath: string
-  ) {
-    this.commandExecutor = commandExecutor;
-    this.filterSelector = filterSelector;
-    this.pandocPath = pandocPath;
-  }
+    private commandExecutor: CommandExecutor,
+    private filterSelector: FilterSelector,
+    private pandocPath: string
+  ) {}
 
   /**
    * pandocコマンドが利用可能かチェック

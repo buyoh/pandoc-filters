@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM elements
   const inputTextElem = document.getElementById('inputText');
   const outputTextElem = document.getElementById('outputText');
   const convertBtnElem = document.getElementById('convertBtn');
@@ -9,10 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const convertTextElem = document.getElementById('convertText');
   const loadingSpinnerElem = document.getElementById('loadingSpinner');
 
-  // API endpoint
   const API_BASE = '/api/v1';
 
-  // Utility functions
   function updateStatus(message, type = 'default') {
     statusElem.textContent = message;
     statusElem.className = `status ${type}`;
@@ -39,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatus(message, 'success');
   }
 
-  // Main conversion function
   async function convertText() {
     // 問題: 送信前に trim していたため、文書先頭のインデント（例: インデントコードブロック）が失われていた
     // 解決: trim は空判定のみに使い、送信には元の値を使う
@@ -89,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Clear function
   function clearText() {
     inputTextElem.value = '';
     outputTextElem.value = '';
@@ -97,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     inputTextElem.focus();
   }
 
-  // Copy result function
   async function copyResult() {
     // 入力と同様に、trim は空判定のみに使い、コピーには変換結果をそのまま使う
     const output = outputTextElem.value;
@@ -145,13 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Auto-resize textareas
   function autoResize(textarea) {
     textarea.style.height = 'auto';
     textarea.style.height = Math.max(textarea.scrollHeight, 400) + 'px';
   }
 
-  // Health check on load
   async function checkApiHealth() {
     try {
       const response = await fetch('/health');
@@ -165,26 +157,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initialize
   function initialize() {
-    // Event listeners for buttons
     convertBtnElem.addEventListener('click', convertText);
     clearBtnElem.addEventListener('click', clearText);
     copyBtnElem.addEventListener('click', copyResult);
 
-    // Event listeners for textareas
     inputTextElem.addEventListener('input', () => autoResize(inputTextElem));
     outputTextElem.addEventListener('input', () => autoResize(outputTextElem));
 
     updateStatus('Ready');
     inputTextElem.focus();
 
-    // Add tooltip information
     convertBtnElem.title = 'Convert (Ctrl+Enter)';
     clearBtnElem.title = 'Clear all text (Ctrl+K)';
     copyBtnElem.title = 'Copy result (Ctrl+Shift+C)';
 
-    // Check API health when page loads
     window.addEventListener('load', checkApiHealth);
   }
 

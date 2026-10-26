@@ -17,9 +17,7 @@ export class DefaultCommandExecutor implements CommandExecutor {
     options: { stdin?: string } = {}
   ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const child = spawn(command, args);
 
       // バグ修正: チャンクごとに Buffer#toString() していたため、パイプのチャンク境界
       // （通常 64KiB）で分割されたマルチバイト文字が U+FFFD に置換されていた。

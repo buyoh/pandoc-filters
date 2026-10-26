@@ -13,11 +13,7 @@ import { createErrorResponse, createSuccessResponse } from './responses';
  * プロトコル仕様: docs-ai/architecture/pandoc-runner-protocol.md
  */
 export class RequestHandler implements RequestLineHandler {
-  private converter: MarkdownConverter;
-
-  constructor(converter: MarkdownConverter) {
-    this.converter = converter;
-  }
+  constructor(private converter: MarkdownConverter) {}
 
   /**
    * JSONリクエストを処理してJSONレスポンスを返す
@@ -61,7 +57,6 @@ export class RequestHandler implements RequestLineHandler {
   ): Promise<string> {
     const { from: fromFormat, to: toFormat, content } = request;
 
-    // 現在はmarkdown -> redmine-textileのみサポート
     if (fromFormat !== 'markdown' || toFormat !== 'redmine-textile') {
       return createErrorResponse(
         `Unsupported conversion: ${fromFormat} -> ${toFormat}`,

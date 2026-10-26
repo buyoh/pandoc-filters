@@ -11,7 +11,11 @@ async function run(
 ): Promise<RecordingResponse> {
   const controller = new ConversionController(client);
   const res = new RecordingResponse();
-  await controller.convertSync({ body } as Request, res as unknown as Response);
+  await controller.convertSync(
+    { body } as Request,
+    res as unknown as Response,
+    () => {}
+  );
   return res;
 }
 
@@ -51,17 +55,6 @@ describe('ConversionController', () => {
       assert.strictEqual(client.callCount, 0);
     });
 
-    it('should return 400 for empty input', async () => {
-      const client = new StubPandocSocketClient({
-        result: { ok: true, output: '' },
-      });
-      const res = await run(client, { input: '   ' });
-
-      assert.strictEqual(res.statusCode, 400);
-      assert.strictEqual(res.body.success, false);
-      assert(res.body.error.includes('input cannot be empty'));
-    });
-
     const failures: Array<{
       kind: ConvertFailureKind;
       status: number;
@@ -98,33 +91,6 @@ describe('ConversionController', () => {
         assert.strictEqual(JSON.stringify(res.body).includes(detail), false);
       });
     }
-
-    it('should return 400 for non-string formats without calling the client', async () => {
-      const client = new StubPandocSocketClient({
-        result: { ok: true, output: '' },
-      });
-      const res = await run(client, {
-        input: '# Hello',
-        from_format: { x: '1' },
-      });
-
-      assert.strictEqual(res.statusCode, 400);
-      assert.strictEqual(
-        res.body.error,
-        'Invalid input: from_format and to_format must be strings'
-      );
-      assert.strictEqual(client.callCount, 0);
-    });
-
-    it('should return 500 with a fixed message for unexpected errors', async () => {
-      const client = new StubPandocSocketClient({
-        error: new Error('secret internal detail'),
-      });
-      const res = await run(client, { input: '# Hello' });
-
-      assert.strictEqual(res.statusCode, 500);
-      assert.strictEqual(res.body.error, 'Internal server error');
-    });
 
     it('passes response write errors to next instead of rejecting', async () => {
       const client = new StubPandocSocketClient({

@@ -5,7 +5,7 @@ import { PandocConverter, DefaultFilterSelector } from './PandocConverter';
 import { DefaultCommandExecutor } from './CommandExecutor';
 import { RequestHandler } from './RequestHandler';
 import { UnixSocketServer } from './UnixSocketServer';
-import { DefaultLogger } from './Logger';
+import { DefaultLogger, LogLevel } from './Logger';
 import {
   DEFAULT_SOCKET_PATH,
   resolveRunnerConfig,
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
 
   const options = program.opts();
 
-  let logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
+  let logLevel: LogLevel = 'info';
   if (options.verbose) {
     logLevel = 'debug';
   } else if (options.quiet) {
@@ -84,7 +84,6 @@ async function main(): Promise<void> {
   installSignalHandlers(process, server, logger);
 }
 
-// メイン関数を実行（モジュールとして直接実行された場合のみ）
 if (require.main === module) {
   main().catch((error) => {
     console.error('Failed to start server:', error);

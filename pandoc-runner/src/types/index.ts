@@ -27,7 +27,7 @@ export type ErrorCode =
   | 'INTERNAL_ERROR';
 
 /** 成功レスポンス */
-export interface SuccessResponse<T = any> {
+export interface SuccessResponse<T> {
   success: true;
   data: T;
   timestamp: string;
@@ -42,8 +42,6 @@ export interface ErrorResponse {
   };
   timestamp: string;
 }
-
-export type Response = SuccessResponse | ErrorResponse;
 
 /** convert 成功時のレスポンスデータ */
 export interface ConversionResult {

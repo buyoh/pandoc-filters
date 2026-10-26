@@ -28,15 +28,11 @@ export interface HttpResult {
   body: ApiResponse<ConvertData>;
 }
 
-function timestamp(): string {
-  return new Date().toISOString();
-}
-
 function errorResult(status: number, error: string): HttpResult {
   const body: ApiErrorResponse = {
     success: false,
     error,
-    timestamp: timestamp(),
+    timestamp: new Date().toISOString(),
   };
   return { status, body };
 }
@@ -79,7 +75,7 @@ export class ConversionController {
             from_format: fromFormat,
             to_format: toFormat,
           },
-          timestamp: timestamp(),
+          timestamp: new Date().toISOString(),
         },
       };
     } catch (error) {
@@ -91,22 +87,17 @@ export class ConversionController {
   /**
    * Express のハンドラ。handle の結果を res に書き出すだけで、reject しない
    * （Express 4 は async ハンドラの reject を捕捉せず、unhandledRejection でプロセスが終了するため）
-   * @param next Express から呼ばれる場合は常に渡される。テストから直接呼ぶ場合は省略可能
    */
   async convertSync(
     req: Request,
     res: Response,
-    next?: NextFunction
+    next: NextFunction
   ): Promise<void> {
     const result = await this.handle(req.body);
     try {
       res.status(result.status).json(result.body);
     } catch (error) {
-      if (next) {
-        next(error);
-      } else {
-        console.error('Failed to write conversion response:', error);
-      }
+      next(error);
     }
   }
 }

@@ -63,7 +63,7 @@ export function parseRunnerResponse(line: string): PandocResponse | undefined {
 /** pandoc-runner と Unix ソケットで 1 リクエスト 1 接続の通信を行うクライアント */
 export class PandocSocketClientImpl implements PandocSocketClient {
   constructor(
-    private socketPath: string = '/tmp/pandoc-runner.sock',
+    private socketPath: string,
     private connect: SocketConnector = (socketPath) =>
       createConnection(socketPath)
   ) {}
@@ -145,29 +145,21 @@ export class PandocSocketClientImpl implements PandocSocketClient {
       socket.setEncoding('utf8');
 
       socket.on('data', (data: string) => {
-        try {
-          responseData += data;
-          const newline = responseData.indexOf('\n');
-          if (newline < 0) {
-            return;
-          }
-          const response = parseRunnerResponse(responseData.slice(0, newline));
-          if (!response) {
-            settle({
-              ok: false,
-              kind: 'runner_error',
-              detail: 'Invalid response from pandoc-runner',
-            });
-            return;
-          }
-          settle({ ok: true, response });
-        } catch (error) {
+        responseData += data;
+        const newline = responseData.indexOf('\n');
+        if (newline < 0) {
+          return;
+        }
+        const response = parseRunnerResponse(responseData.slice(0, newline));
+        if (!response) {
           settle({
             ok: false,
             kind: 'runner_error',
-            detail: `Failed to handle response: ${error}`,
+            detail: 'Invalid response from pandoc-runner',
           });
+          return;
         }
+        settle({ ok: true, response });
       });
 
       socket.on('error', (error: NodeJS.ErrnoException) => {

@@ -1,22 +1,19 @@
 import * as net from 'net';
 import * as fs from 'fs';
 import { Logger, SocketServer } from './types';
-import { DefaultLogger } from './Logger';
 import { ClientConnection } from './ClientConnection';
 
 /**
  * Unixソケット経由での通信を管理するクラス
  */
 export class UnixSocketServer implements SocketServer {
-  private socketPath: string;
-  private logger: Logger;
   private server: net.Server | null = null;
   private running = false;
 
-  constructor(socketPath: string, logger?: Logger) {
-    this.socketPath = socketPath;
-    this.logger = logger || new DefaultLogger();
-  }
+  constructor(
+    private socketPath: string,
+    private logger: Logger
+  ) {}
 
   /**
    * サーバーを開始する
@@ -66,20 +63,6 @@ export class UnixSocketServer implements SocketServer {
         resolve();
       });
     });
-  }
-
-  /**
-   * サーバーが実行中かどうか
-   */
-  isRunning(): boolean {
-    return this.running;
-  }
-
-  /**
-   * ソケットパスを取得
-   */
-  getSocketPath(): string {
-    return this.socketPath;
   }
 
   /**

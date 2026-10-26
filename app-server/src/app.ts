@@ -27,33 +27,23 @@ export function createApp(deps: AppDependencies): Express {
   const { webAppPath } = deps;
   const indexHtmlPath = path.join(webAppPath, 'index.html');
 
-  // Middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Static files for web application
   app.use(express.static(webAppPath));
 
-  // API Routes
   const conversionController = new ConversionController(deps.pandocClient);
   app.post(
     '/api/v1/sync/convert',
     conversionController.convertSync.bind(conversionController)
   );
 
-  // Health check
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Web application route
-  app.get('/', (req, res) => {
-    res.sendFile(indexHtmlPath);
-  });
-
   // Catch-all for web app routes (SPA support)
   app.get('*', (req, res, next) => {
-    // Skip API routes
     if (isApiPath(req.path)) {
       return next();
     }
@@ -72,7 +62,6 @@ export function createApp(deps: AppDependencies): Express {
     });
   });
 
-  // Error handling middleware
   app.use(errorHandler);
 
   return app;

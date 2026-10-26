@@ -1,17 +1,13 @@
-/**
- * 基本的なロガー実装
- */
 import { Logger } from './types';
 
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+/** 指定レベル以上のメッセージをコンソールに出力するロガー */
 export class DefaultLogger implements Logger {
-  private logLevel: 'debug' | 'info' | 'warn' | 'error';
+  constructor(private logLevel: LogLevel = 'info') {}
 
-  constructor(logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info') {
-    this.logLevel = logLevel;
-  }
-
-  private shouldLog(level: 'debug' | 'info' | 'warn' | 'error'): boolean {
-    const levels = ['debug', 'info', 'warn', 'error'];
+  private shouldLog(level: LogLevel): boolean {
+    const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
     return levels.indexOf(level) >= levels.indexOf(this.logLevel);
   }
 

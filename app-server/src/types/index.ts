@@ -29,7 +29,7 @@ export interface PandocSuccessResponse {
 export interface PandocErrorResponse {
   success: false;
   error: {
-    message: string; // エラーメッセージ
+    message: string;
     code: string; // エラーコード（例: 'CONVERSION_ERROR'）
   };
   timestamp: string; // ISO8601形式のタイムスタンプ

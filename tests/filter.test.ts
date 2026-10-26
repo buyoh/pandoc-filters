@@ -5,11 +5,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 // 注意: tests/snapshots/*.textile の期待値には、Redmine のタグ解釈を避けるためのゼロ幅スペース（U+200B）が意図的に含まれる
-const TESTS_DIR = __dirname;
 const PROJECT_ROOT = join(__dirname, '../../'); // distディレクトリから2階層上がプロジェクトルート
 const SNAPSHOTS_DIR = join(PROJECT_ROOT, 'tests/snapshots');
 const MANIFEST_PATH = join(SNAPSHOTS_DIR, 'manifest.json');
-const FILTER_PATH = join(PROJECT_ROOT, 'dist/src/ToRedmine.js'); // コンパイル済みのJSファイルを使用
+const FILTER_PATH = join(PROJECT_ROOT, 'dist/src/ToRedmine.js');
 
 interface TestCase {
   input: string;
@@ -29,7 +28,6 @@ function loadTestCases(): TestCase[] {
   const manifestContent = readFileSync(MANIFEST_PATH, 'utf8');
   const testCases: TestCase[] = JSON.parse(manifestContent);
 
-  // ファイルの存在チェック
   for (const testCase of testCases) {
     const inputPath = join(SNAPSHOTS_DIR, testCase.input);
     const outputPath = join(SNAPSHOTS_DIR, testCase.output);
@@ -117,14 +115,6 @@ function normalizeLooseOutput(output: string): string {
     .trim();
 }
 
-/**
- * テストケース名を生成
- */
-function getTestName(testCase: TestCase): string {
-  const baseName = testCase.input.replace(/\.[^.]+$/, ''); // 拡張子を除去
-  return baseName;
-}
-
 describe('Pandoc Filter Snapshot Tests', () => {
   let testCases: TestCase[];
 
@@ -144,9 +134,8 @@ describe('Pandoc Filter Snapshot Tests', () => {
     return;
   }
 
-  // 各テストケースごとに独立したテストを生成
   for (const testCase of testCases) {
-    const testName = getTestName(testCase);
+    const testName = testCase.input.replace(/\.[^.]+$/, '');
 
     it(`${testName}: should transform ${testCase.input_type} to ${testCase.output_type}`, () => {
       console.log(`\n=== Testing: ${testName} ===`);
@@ -154,32 +143,28 @@ describe('Pandoc Filter Snapshot Tests', () => {
       const inputPath = join(SNAPSHOTS_DIR, testCase.input);
       const outputPath = join(SNAPSHOTS_DIR, testCase.output);
 
-      // 入力ファイルを読み込み
       const inputContent = readFileSync(inputPath, 'utf8');
       console.log(`Input (${testCase.input}):\n${inputContent}`);
 
-      // 期待される結果を読み込み
       const expectedOutput = readFileSync(outputPath, 'utf8');
       console.log(`Expected (${testCase.output}):\n${expectedOutput}`);
 
       let actualOutput: string;
 
       if (testCase.output_type === 'textile') {
-        // textileの場合は入力を直接textileに変換してフィルターを適用
         actualOutput = processForTextileOutput(
           inputContent,
           testCase.input_type
         );
         console.log(`Direct textile conversion result:\n${actualOutput}`);
       } else {
-        // その他の形式の場合は従来通りHTML経由で変換。変換失敗時はフォールバックせずテストを失敗させる
+        // その他の形式は HTML 経由で変換する
         const htmlOutput = runPandocFilter(inputContent, testCase.input_type);
         console.log(`HTML Output:\n${htmlOutput}`);
         actualOutput = convertHtmlTo(htmlOutput, testCase.output_type);
         console.log(`Converted to ${testCase.output_type}:\n${actualOutput}`);
       }
 
-      // 正規化して比較
       const normalize =
         testCase.output_type === 'textile'
           ? normalizeTextileOutput
@@ -193,7 +178,6 @@ describe('Pandoc Filter Snapshot Tests', () => {
         console.log(`Expected (normalized):\n${normalizedExpected}`);
         console.log(`=== END MISMATCH ===\n`);
 
-        // 詳細な差分を表示
         showDetailedDiff(normalizedActual, normalizedExpected);
       }
 
@@ -219,7 +203,7 @@ function showDetailedDiff(actual: string, expected: string): void {
   const maxLines = Math.max(actualLines.length, expectedLines.length);
 
   for (let i = 0; i < maxLines; i++) {
-    // 空行も比較対象になったため、falsy 判定ではなく行数で欠落を判定する
+    // 空行と欠落行を区別するため、falsy 判定ではなく行数で判定する
     const actualLine = i < actualLines.length ? actualLines[i] : '<missing>';
     const expectedLine =
       i < expectedLines.length ? expectedLines[i] : '<missing>';

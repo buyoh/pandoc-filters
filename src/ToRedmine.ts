@@ -6,8 +6,6 @@ import {
   toJSONFilter,
 } from 'pandoc-filter';
 
-//
-
 /**
  * Redmine の textile パーサ（redcloth3.rb の OFFTAG_MATCH）がタグとして解釈する
  * `<code` `</code` `<pre` `</pre` `<kbd` `</kbd` `<notextile` `</notextile` の先頭の `<` にマッチする。
@@ -56,8 +54,7 @@ function action(
       return RawBlock('html', `{{plantuml\n${code}\n}}\n`);
     }
 
-    // 以前は Redmine で pre タグがネストする問題の回避策として、コードに `<pre>` を含む場合に言語クラスを外していた。
-    // neutralizeRedmineOfftags によりコード中の `<pre` はタグとして解釈されなくなったため、回避策は削除した
+    // コード中の `<pre` は neutralizeRedmineOfftags で無害化されるため、`<pre>` を含む場合も言語クラスを付ける
     const language = extractLanguageClass(classes);
     const syntax = language ? ` class="${language}"` : '';
     return RawBlock(

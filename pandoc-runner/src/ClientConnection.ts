@@ -48,9 +48,8 @@ export class ClientConnection {
   private onData(data: string): void {
     this.buffer += data;
 
-    // 改行で区切られたリクエストを処理
     const lines = this.buffer.split('\n');
-    this.buffer = lines.pop() || ''; // 最後の不完全な行をバッファに保持
+    this.buffer = lines.pop()!; // 最後の不完全な行をバッファに保持
 
     for (const line of lines) {
       const requestLine = line.trim();

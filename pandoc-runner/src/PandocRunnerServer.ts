@@ -30,10 +30,9 @@ export class PandocRunnerServer {
     const { logger, pandocValidator, requestHandler, socketServer } = this.deps;
     logger.info('Starting Pandoc Runner Server...');
 
-    // pandocの可用性をチェック。失敗の報告は呼び出し側（index.ts）が行う
+    // 失敗の報告は呼び出し側（index.ts）が行う
     await pandocValidator.validatePandocAvailability();
 
-    // サーバーを開始し、リクエストハンドラーをバインド
     try {
       await socketServer.start((requestLine: string) => {
         return requestHandler.handleRequest(requestLine);

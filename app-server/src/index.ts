@@ -40,7 +40,6 @@ function main(): void {
   });
 }
 
-// モジュールとして直接実行された場合のみ起動する
 if (require.main === module) {
   main();
 }

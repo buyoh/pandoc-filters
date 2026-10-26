@@ -1,8 +1,3 @@
-# app-server のマルチステージビルド Dockerfile。
-# ステージ1（builder）で TypeScript をコンパイルし、
-# ステージ2（prod-deps）で本番用依存関係のみをインストールし、
-# ステージ3（final）に dist/ と本番 node_modules のみをコピーする。
-
 # ステージ1: TypeScript ビルド
 FROM node:20 AS builder
 
