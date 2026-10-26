@@ -42,8 +42,10 @@ pnpm app-server:dev:watch
 ## コマンドライン引数
 
 - `--pandoc-socket-path <path>`: pandoc-runnerのUnixソケットパス (デフォルト: /tmp/pandoc-runner.sock)
-- `--port <number>` または `-p <number>`: HTTPサーバーのポート番号 (デフォルト: 3000)
+- `--port <number>` または `-p <number>`: HTTPサーバーのポート番号。1〜65535 の整数 (デフォルト: 環境変数 `PORT`、未設定なら 3000)
 - `--help` または `-h`: ヘルプメッセージを表示
+
+不正な引数（未知のオプション、範囲外・数字以外のポート番号）や不正な `PORT` 環境変数を指定した場合はエラーを表示して終了コード 1 で終了する。`--port` を指定した場合 `PORT` は参照しない。
 
 ## API エンドポイント
 
@@ -137,7 +139,8 @@ pnpm --filter app-server build && node --test dist/tests/**/*.test.js
 app-server/
 ├── src/
 │   ├── controllers/          # HTTPリクエストハンドラー
-│   │   └── ConversionController.ts
+│   │   ├── ConversionController.ts
+│   │   └── ConversionRequestValidator.ts  # リクエストボディの検証
 │   ├── middleware/          # Expressミドルウェア
 │   │   └── errorHandler.ts
 │   ├── services/            # ビジネスロジック
@@ -146,11 +149,17 @@ app-server/
 │   │   └── index.ts
 │   ├── tests/               # テストファイル
 │   │   ├── stubs.ts         # テスト用スタブ
+│   │   ├── app.real.test.ts # ルーティングの確認（ループバックで listen）
+│   │   ├── config.test.ts
+│   │   ├── index.test.ts
 │   │   ├── ConversionController.test.ts
+│   │   ├── ConversionRequestValidator.test.ts
 │   │   ├── PandocSocketClientImpl.test.ts
 │   │   ├── PandocSocketClientImpl.real.test.ts
 │   │   └── errorHandler.test.ts
-│   └── index.ts             # アプリケーションエントリーポイント
+│   ├── app.ts               # Express アプリの組み立て（createApp。listen はしない）
+│   ├── config.ts            # コマンドライン引数・環境変数の解析（parseArgs）
+│   └── index.ts             # アプリケーションエントリーポイント（main）
 ├── web-simple/              # Webアプリケーション
 │   ├── index.html          # メインHTML
 │   ├── style.css           # スタイルシート
@@ -165,8 +174,10 @@ app-server/
 
 エラー時の `error` は固定文言で、内部情報（ソケットパスや pandoc のエラー出力など）は含まない。詳細はサーバーのログに出力される。
 
-- 400: 不正なリクエスト（入力データの検証エラー、不正な JSON、未対応の変換形式）
+- 400: 不正なリクエスト（入力データの検証エラー、`from_format` / `to_format` が文字列でない、不正な JSON、未対応の変換形式）
 - 413: リクエストボディが大きすぎる
 - 502: 変換エラー、または pandoc-runner から想定外の応答
 - 503: pandoc-runnerサーバーが利用できない
 - 500: 内部サーバーエラー
+
+`/api` 配下の存在しないパスには `{"error": "Not Found", "message": "API route <METHOD> <path> not found"}` を 404 で返す。

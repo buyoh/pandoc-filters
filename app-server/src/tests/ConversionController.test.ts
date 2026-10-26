@@ -12,6 +12,17 @@ async function run(client: StubPandocSocketClient, body: unknown): Promise<Recor
   return res;
 }
 
+/** json() で例外を投げる Response スタブ */
+class ThrowingResponse extends RecordingResponse {
+  constructor(private error: Error) {
+    super();
+  }
+
+  json(): this {
+    throw this.error;
+  }
+}
+
 describe('ConversionController', () => {
   describe('convertSync', () => {
     it('should return converted text for valid input', async () => {
@@ -61,12 +72,63 @@ describe('ConversionController', () => {
       });
     }
 
+    it('should return 400 for non-string formats without calling the client', async () => {
+      const client = new StubPandocSocketClient({ result: { ok: true, output: '' } });
+      const res = await run(client, { input: '# Hello', from_format: { x: '1' } });
+
+      assert.strictEqual(res.statusCode, 400);
+      assert.strictEqual(res.body.error, 'Invalid input: from_format and to_format must be strings');
+      assert.strictEqual(client.callCount, 0);
+    });
+
     it('should return 500 with a fixed message for unexpected errors', async () => {
       const client = new StubPandocSocketClient({ error: new Error('secret internal detail') });
       const res = await run(client, { input: '# Hello' });
 
       assert.strictEqual(res.statusCode, 500);
       assert.strictEqual(res.body.error, 'Internal server error');
+    });
+
+    it('passes response write errors to next instead of rejecting', async () => {
+      const client = new StubPandocSocketClient({ result: { ok: true, output: 'x' } });
+      const writeError = new Error('write failed');
+      const res = new ThrowingResponse(writeError);
+      let nextArg: unknown;
+      await new ConversionController(client).convertSync({ body: { input: 'a' } } as Request, res as unknown as Response, (arg?: unknown) => {
+        nextArg = arg;
+      });
+
+      assert.strictEqual(nextArg, writeError);
+    });
+  });
+
+  describe('handle', () => {
+    it('returns the HTTP result without depending on Express', async () => {
+      const client = new StubPandocSocketClient({ result: { ok: true, output: 'h1. Hi' } });
+      const result = await new ConversionController(client).handle({ input: '# Hi' });
+
+      assert.strictEqual(result.status, 200);
+      assert.ok(result.body.success);
+      assert.deepStrictEqual(result.body.data, { output: 'h1. Hi', from_format: 'markdown', to_format: 'redmine-textile' });
+      assert.strictEqual(new Date(result.body.timestamp).toISOString(), result.body.timestamp);
+    });
+
+    it('passes the given formats to the client', async () => {
+      const client = new StubPandocSocketClient({ result: { ok: true, output: 'x' } });
+      const result = await new ConversionController(client).handle({ input: 'a', from_format: 'gfm', to_format: 'plain' });
+
+      assert.deepStrictEqual(client.lastArgs, { input: 'a', fromFormat: 'gfm', toFormat: 'plain' });
+      assert.ok(result.body.success);
+      assert.strictEqual(result.body.data.from_format, 'gfm');
+      assert.strictEqual(result.body.data.to_format, 'plain');
+    });
+
+    it('converts unexpected errors to a 500 result instead of throwing', async () => {
+      const client = new StubPandocSocketClient({ error: new Error('boom') });
+      const result = await new ConversionController(client).handle({ input: 'a' });
+
+      assert.strictEqual(result.status, 500);
+      assert.deepStrictEqual({ ...result.body, timestamp: '' }, { success: false, error: 'Internal server error', timestamp: '' });
     });
   });
 });

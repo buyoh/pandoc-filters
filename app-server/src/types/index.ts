@@ -1,16 +1,4 @@
 /**
- * HTTP APIのリクエストボディ用の型
- * クライアント（Webアプリケーション）からExpressサーバーへの変換リクエスト
- */
-export interface ConversionRequest {
-  input: string;
-  /** 変換元フォーマット。省略可能で、省略時は 'markdown' */
-  from_format?: string;
-  /** 変換先フォーマット。省略可能で、省略時は 'redmine-textile' */
-  to_format?: string;
-}
-
-/**
  * pandoc-runnerサーバーへのUnixSocket通信用リクエスト型
  * プロトコル仕様: docs-ai/architecture/pandoc-runner-protocol.md
  */
@@ -72,17 +60,32 @@ export type ConvertResult =
       detail: string;
     };
 
+/** HTTP API の成功レスポンス */
+export interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
+  timestamp: string; // ISO8601形式のタイムスタンプ
+}
+
+/** HTTP API の失敗レスポンス */
+export interface ApiErrorResponse {
+  success: false;
+  /** 失敗時のメッセージ（固定文言。内部情報は含めない） */
+  error: string;
+  timestamp: string; // ISO8601形式のタイムスタンプ
+}
+
 /**
  * HTTP APIの統一レスポンス型
- * クライアントに返される全てのAPIレスポンスで使用
+ * クライアントに返される全てのAPIレスポンスで使用。既定型引数は持たせず、data の型を呼び出し側で必ず指定する
  */
-export interface ApiResponse<T = any> {
-  success: boolean;
-  /** 成功時のデータ。失敗時は存在しない */
-  data?: T;
-  /** 失敗時のメッセージ（固定文言）。成功時は存在しない */
-  error?: string;
-  timestamp: string; // ISO8601形式のタイムスタンプ
+export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+/** POST /api/v1/sync/convert の成功時の data */
+export interface ConvertData {
+  output: string;
+  from_format: string;
+  to_format: string;
 }
 
 /**

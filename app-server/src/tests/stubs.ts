@@ -54,11 +54,15 @@ export class RecordingResponse {
 export class StubPandocSocketClient implements PandocSocketClient {
   /** convert の呼び出し回数 */
   callCount = 0;
+  /** 最後の convert 呼び出しの引数。一度も呼ばれていない場合は undefined */
+  lastArgs: { input: string; fromFormat: string; toFormat: string } | undefined = undefined;
 
-  constructor(private behavior: { result: ConvertResult } | { error: Error }) {}
+  /** convert の振る舞い。テスト中に差し替えてよい */
+  constructor(public behavior: { result: ConvertResult } | { error: Error }) {}
 
-  async convert(): Promise<ConvertResult> {
+  async convert(input: string, fromFormat: string, toFormat: string): Promise<ConvertResult> {
     this.callCount++;
+    this.lastArgs = { input, fromFormat, toFormat };
     if ('error' in this.behavior) {
       throw this.behavior.error;
     }

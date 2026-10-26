@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
-import { PandocSocketClient, ConversionRequest, ApiResponse, ConvertFailureKind } from '../types';
+import { NextFunction, Request, Response } from 'express';
+import { PandocSocketClient, ApiErrorResponse, ApiResponse, ConvertData, ConvertFailureKind } from '../types';
+import { validateConversionRequest } from './ConversionRequestValidator';
 
 /** 失敗の種類ごとの HTTP ステータスとクライアントへの固定文言（内部情報は返さない） */
 const FAILURE_RESPONSES: Record<ConvertFailureKind, { status: number; error: string }> = {
@@ -9,70 +10,75 @@ const FAILURE_RESPONSES: Record<ConvertFailureKind, { status: number; error: str
   runner_error: { status: 502, error: 'Pandoc server returned an unexpected response' }
 };
 
+/** HTTP 応答として書き出す内容（Express に依存しない） */
+export interface HttpResult {
+  status: number;
+  body: ApiResponse<ConvertData>;
+}
+
+function timestamp(): string {
+  return new Date().toISOString();
+}
+
+function errorResult(status: number, error: string): HttpResult {
+  const body: ApiErrorResponse = { success: false, error, timestamp: timestamp() };
+  return { status, body };
+}
+
 /** 変換 API のリクエストを検証し、pandoc-runner の結果を HTTP レスポンスに対応付けるコントローラ */
 export class ConversionController {
   constructor(private pandocClient: PandocSocketClient) {}
 
-  async convertSync(req: Request, res: Response): Promise<void> {
+  /** リクエストボディを検証・変換し、HTTP 応答内容を返す。予期しない例外も 500 の結果に変換し、例外を投げない */
+  async handle(body: unknown): Promise<HttpResult> {
     try {
-      const { input, from_format = 'markdown', to_format = 'redmine-textile' }: ConversionRequest = req.body;
-
-      // Validation
-      if (!input || typeof input !== 'string') {
-        res.status(400).json({
-          success: false,
-          error: 'Invalid input: input field is required and must be a string',
-          timestamp: new Date().toISOString()
-        } as ApiResponse);
-        return;
+      const validation = validateConversionRequest(body);
+      if (!validation.ok) {
+        return errorResult(400, validation.error);
       }
-
-      if (input.trim().length === 0) {
-        res.status(400).json({
-          success: false,
-          error: 'Invalid input: input cannot be empty',
-          timestamp: new Date().toISOString()
-        } as ApiResponse);
-        return;
-      }
+      const { input, fromFormat, toFormat } = validation.request;
 
       // 以前は変換前に ping して 2 接続を張っていたが、ping 成功後の切断が 500 になる等の
       // 問題があったため廃止。接続失敗は convert の結果（unavailable）で判定する
-      const result = await this.pandocClient.convert(input, from_format, to_format);
+      const result = await this.pandocClient.convert(input, fromFormat, toFormat);
 
       if (!result.ok) {
         console.error(
           `Conversion failed: kind=${result.kind} runnerCode=${result.runnerCode ?? '-'} detail=${result.detail}`
         );
         const failure = FAILURE_RESPONSES[result.kind];
-        const body: ApiResponse = {
-          success: false,
-          error: failure.error,
-          timestamp: new Date().toISOString()
-        };
-        res.status(failure.status).json(body);
-        return;
+        return errorResult(failure.status, failure.error);
       }
 
-      const body: ApiResponse<{ output: string; from_format: string; to_format: string }> = {
-        success: true,
-        data: {
-          output: result.output,
-          from_format,
-          to_format
-        },
-        timestamp: new Date().toISOString()
+      return {
+        status: 200,
+        body: {
+          success: true,
+          data: { output: result.output, from_format: fromFormat, to_format: toFormat },
+          timestamp: timestamp()
+        }
       };
-      res.json(body);
     } catch (error) {
       console.error('Unexpected conversion error:', error);
+      return errorResult(500, 'Internal server error');
+    }
+  }
 
-      const body: ApiResponse = {
-        success: false,
-        error: 'Internal server error',
-        timestamp: new Date().toISOString()
-      };
-      res.status(500).json(body);
+  /**
+   * Express のハンドラ。handle の結果を res に書き出すだけで、reject しない
+   * （Express 4 は async ハンドラの reject を捕捉せず、unhandledRejection でプロセスが終了するため）
+   * @param next Express から呼ばれる場合は常に渡される。テストから直接呼ぶ場合は省略可能
+   */
+  async convertSync(req: Request, res: Response, next?: NextFunction): Promise<void> {
+    const result = await this.handle(req.body);
+    try {
+      res.status(result.status).json(result.body);
+    } catch (error) {
+      if (next) {
+        next(error);
+      } else {
+        console.error('Failed to write conversion response:', error);
+      }
     }
   }
 }

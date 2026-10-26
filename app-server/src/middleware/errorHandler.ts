@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { ApiResponse } from '../types';
+import { ApiErrorResponse } from '../types';
 
 function clientErrorStatus(err: unknown): number | undefined {
   if (err === null || typeof err !== 'object') {
@@ -41,7 +41,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   console.error('Error:', err);
 
   const status = clientErrorStatus(err);
-  const body: ApiResponse = {
+  const body: ApiErrorResponse = {
     success: false,
     error: status !== undefined ? clientErrorMessage(status) : 'Internal server error',
     timestamp: new Date().toISOString()

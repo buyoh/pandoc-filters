@@ -1,128 +1,48 @@
-import express, { type Express } from 'express';
 import { createServer } from 'http';
-import path from 'path';
-import { ConversionController } from './controllers/ConversionController';
+import { createApp } from './app';
+import { parseArgs } from './config';
 import { PandocSocketClientImpl } from './services/PandocSocketClientImpl';
-import { errorHandler } from './middleware/errorHandler';
 
-// Parse command line arguments
-function parseArguments() {
-  const args = process.argv.slice(2);
-  const config = {
-    port: process.env.PORT || 3000,
-    socketPath: '/tmp/pandoc-runner.sock' // default
-  };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    
-    if (arg === '--pandoc-socket-path') {
-      const socketPath = args[i + 1];
-      if (socketPath && !socketPath.startsWith('-')) {
-        config.socketPath = socketPath;
-        i++; // Skip next argument as it's the socket path
-      } else {
-        console.error('Error: --pandoc-socket-path requires a path argument');
-        process.exit(1);
-      }
-    } else if (arg === '--port' || arg === '-p') {
-      const port = args[i + 1];
-      if (port && !port.startsWith('-')) {
-        config.port = parseInt(port, 10);
-        if (isNaN(config.port)) {
-          console.error('Error: --port requires a numeric argument');
-          process.exit(1);
-        }
-        i++; // Skip next argument as it's the port
-      } else {
-        console.error('Error: --port requires a numeric argument');
-        process.exit(1);
-      }
-    } else if (arg === '--help' || arg === '-h') {
-      console.log(`
-Usage: node dist/index.js [options]
-
-Options:
-  --pandoc-socket-path <path>  Unix socket path for pandoc-runner (default: /tmp/pandoc-runner.sock)
-  -p, --port <number>          Port number for HTTP server (default: 3000)
-  -h, --help                   Show this help message
-
-Examples:
-  node dist/index.js --pandoc-socket-path /tmp/custom-pandoc.sock --port 8080
-  node dist/index.js --pandoc-socket-path /var/run/pandoc.sock -p 3001
-      `);
-      process.exit(0);
-    } else if (arg.startsWith('-')) {
-      console.error(`Error: Unknown option '${arg}'`);
-      console.error('Use --help for usage information');
-      process.exit(1);
-    }
+/**
+ * メイン実行関数。引数解析・組み立て・待ち受けを行う。process.exit はこの関数でのみ呼ぶ
+ *
+ * 以前は import するだけで process.argv を解析し、テストランナーの引数次第で process.exit していたため、
+ * 解析は config.ts の parseArgs（純粋関数）、ルーティングは app.ts の createApp に分離した
+ */
+function main(): void {
+  const parsed = parseArgs(process.argv.slice(2), process.env);
+  if (parsed.kind === 'help') {
+    console.log(parsed.text);
+    process.exit(0);
   }
-
-  return config;
-}
-
-const config = parseArguments();
-// pnpm 移行時の不具合: declaration: true の下で app の型を推論させると、
-// pnpm の node_modules 配置では推論型が参照する @types/express-serve-static-core を
-// app-server から直接解決できず TS2742 でビルドが失敗する。
-// express が再エクスポートする Express 型を明示して解決する。
-const app: Express = express();
-const port = config.port;
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Static files for web application
-const webAppPath = path.join(__dirname, '../web-simple');
-app.use(express.static(webAppPath));
-
-// Services
-const pandocClient = new PandocSocketClientImpl(config.socketPath);
-const conversionController = new ConversionController(pandocClient);
-
-// API Routes
-app.post('/api/v1/sync/convert', conversionController.convertSync.bind(conversionController));
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Web application route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(webAppPath, 'index.html'));
-});
-
-// Catch-all for web app routes (SPA support)
-app.get('*', (req, res, next) => {
-  // Skip API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
+  if (parsed.kind === 'error') {
+    console.error(`Error: ${parsed.message}`);
+    console.error('Use --help for usage information');
+    process.exit(1);
   }
-  res.sendFile(path.join(webAppPath, 'index.html'));
-});
+  const { config } = parsed;
 
-// Error handling middleware
-app.use(errorHandler);
-
-// 404 handler for API routes only
-app.use('/api/*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `API route ${req.method} ${req.path} not found`
+  // composition root: 具象クラスの組み立てはここだけで行う
+  const app = createApp({
+    pandocClient: new PandocSocketClientImpl(config.socketPath),
+    webAppPath: config.webAppPath
   });
-});
+  const server = createServer(app);
 
-const server = createServer(app);
-
-// Only start server if this file is run directly
-if (require.main === module) {
-  server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+  // 以前は 'error' を処理しておらず、EADDRINUSE 等で未処理例外として異常終了していた
+  server.on('error', (error) => {
+    console.error(`Failed to start server: ${error.message}`);
+    process.exit(1);
+  });
+  server.listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`);
     console.log(`Using pandoc-runner socket: ${config.socketPath}`);
   });
 }
 
-export { app, server };
+// モジュールとして直接実行された場合のみ起動する
+if (require.main === module) {
+  main();
+}
+
+export { main };
