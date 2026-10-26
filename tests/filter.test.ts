@@ -8,7 +8,7 @@ const TESTS_DIR = __dirname;
 const PROJECT_ROOT = join(__dirname, '../../'); // distディレクトリから2階層上がプロジェクトルート
 const SNAPSHOTS_DIR = join(PROJECT_ROOT, 'tests/snapshots');
 const MANIFEST_PATH = join(SNAPSHOTS_DIR, 'manifest.json');
-const FILTER_PATH = join(PROJECT_ROOT, 'dist/ToRedmine.js'); // コンパイル済みのJSファイルを使用
+const FILTER_PATH = join(PROJECT_ROOT, 'dist/src/ToRedmine.js'); // コンパイル済みのJSファイルを使用
 
 interface TestCase {
   input: string;
