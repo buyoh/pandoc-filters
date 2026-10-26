@@ -94,6 +94,24 @@ export interface MarkdownConverter {
   convertMarkdownToRedmineTextile(markdownText: string): Promise<ConversionOutcome>;
 }
 
+/** 起動時に pandoc が利用可能か検査するインターフェース（PandocRunnerServer の依存） */
+export interface PandocAvailabilityValidator {
+  /** 利用できない場合は ConversionError を投げる */
+  validatePandocAvailability(): Promise<void>;
+}
+
+/** 1 行の JSON リクエストを処理して 1 行の JSON レスポンスを返すインターフェース（PandocRunnerServer の依存） */
+export interface RequestLineHandler {
+  handleRequest(requestLine: string): Promise<string>;
+}
+
+/** リクエストを受け付けるソケットサーバーのインターフェース（PandocRunnerServer の依存） */
+export interface SocketServer {
+  /** listen を開始する。開始できない場合は reject する */
+  start(requestHandler: (requestLine: string) => Promise<string>): Promise<void>;
+  stop(): Promise<void>;
+}
+
 /** ログ出力のインターフェース */
 export interface Logger {
   info(message: string): void;

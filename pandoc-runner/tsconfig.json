@@ -16,19 +16,11 @@
     "types": ["node"]
   },
   "include": [
-    "src/**/*",
-    "tests/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "src/commandExecutor.ts",
-    "src/logger.ts",
-    "src/pandocConverter.ts",
-    "src/pandocRunnerServer.ts",
-    "src/requestHandler.ts",
-    "src/unixSocketServer.ts",
-    "src/types.ts",
     "src/tests"
   ]
 }

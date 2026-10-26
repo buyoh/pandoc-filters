@@ -4,25 +4,23 @@ import {
   FilterSelector,
   ConversionError,
   ConversionOutcome,
-  MarkdownConverter
+  MarkdownConverter,
+  PandocAvailabilityValidator
 } from './types';
-import { DefaultCommandExecutor } from './CommandExecutor';
 
 function isErrnoException(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && typeof (error as NodeJS.ErrnoException).code === 'string';
 }
 
-function solvePandocPath() {
-  if (process.env.PF_PANDOC_PATH) {
-    return process.env.PF_PANDOC_PATH;
-  }
-  return 'pandoc';
-}
-
 /**
- * デフォルトのフィルターセレクター
+ * markdown → redmine-textile 変換に、指定した 1 つのフィルタを使うフィルターセレクター
  */
 export class DefaultFilterSelector implements FilterSelector {
+  /**
+   * @param filterPath ToRedmine フィルタのパス（RunnerConfig.filterPath）
+   */
+  constructor(private filterPath: string) {}
+
   /**
    * フィルターパスを取得する
    * @param fromFormat 変換元フォーマット
@@ -31,8 +29,7 @@ export class DefaultFilterSelector implements FilterSelector {
    */
   getFilterPath(fromFormat: string, toFormat: string): string | null {
     if (fromFormat === 'markdown' && toFormat === 'redmine-textile') {
-      // TODO: adjust path as needed - use relative path from project root
-      return '../dist/src/ToRedmine.js';
+      return this.filterPath;
     }
     return null;
   }
@@ -41,16 +38,20 @@ export class DefaultFilterSelector implements FilterSelector {
 /**
  * pandocコマンドを実行してmarkdownからredmine-textileに変換するクラス
  */
-export class PandocConverter implements MarkdownConverter {
+export class PandocConverter implements MarkdownConverter, PandocAvailabilityValidator {
   private commandExecutor: CommandExecutor;
   private filterSelector: FilterSelector;
+  /** pandoc 実行ファイルのパス（RunnerConfig.pandocPath） */
+  private pandocPath: string;
 
   constructor(
-    commandExecutor: CommandExecutor = new DefaultCommandExecutor(),
-    filterSelector: FilterSelector = new DefaultFilterSelector()
+    commandExecutor: CommandExecutor,
+    filterSelector: FilterSelector,
+    pandocPath: string
   ) {
     this.commandExecutor = commandExecutor;
     this.filterSelector = filterSelector;
+    this.pandocPath = pandocPath;
   }
 
   /**
@@ -58,7 +59,7 @@ export class PandocConverter implements MarkdownConverter {
    */
   async validatePandocAvailability(): Promise<void> {
     try {
-      const result = await this.commandExecutor.execute(solvePandocPath(), ['--version']);
+      const result = await this.commandExecutor.execute(this.pandocPath, ['--version']);
       if (result.exitCode !== 0) {
         throw new ConversionError('pandoc command not available');
       }
@@ -84,7 +85,7 @@ export class PandocConverter implements MarkdownConverter {
 
     let result: CommandResult;
     try {
-      result = await this.commandExecutor.execute(solvePandocPath(), commandArgs, { stdin: markdownText });
+      result = await this.commandExecutor.execute(this.pandocPath, commandArgs, { stdin: markdownText });
     } catch (error) {
       // コマンドを起動できない（ENOENT 等）。execute の reject のみを変換失敗として扱う
       if (isErrnoException(error) && error.code === 'ENOENT') {

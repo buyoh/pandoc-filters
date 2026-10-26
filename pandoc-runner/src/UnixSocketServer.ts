@@ -1,22 +1,20 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import { Logger } from './types';
+import { Logger, SocketServer } from './types';
 import { DefaultLogger } from './Logger';
 import { ClientConnection } from './ClientConnection';
 
 /**
  * Unixソケット経由での通信を管理するクラス
  */
-export class UnixSocketServer {
-  private static readonly DEFAULT_SOCKET_PATH = '/tmp/pandoc-runner.sock';
-  
+export class UnixSocketServer implements SocketServer {
   private socketPath: string;
   private logger: Logger;
   private server: net.Server | null = null;
   private running = false;
 
-  constructor(socketPath?: string, logger?: Logger) {
-    this.socketPath = socketPath || UnixSocketServer.DEFAULT_SOCKET_PATH;
+  constructor(socketPath: string, logger?: Logger) {
+    this.socketPath = socketPath;
     this.logger = logger || new DefaultLogger();
   }
 

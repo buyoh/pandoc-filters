@@ -4,7 +4,10 @@ import {
   CommandResult,
   ConversionOutcome,
   Logger,
-  MarkdownConverter
+  MarkdownConverter,
+  PandocAvailabilityValidator,
+  RequestLineHandler,
+  SocketServer
 } from '../types';
 
 /**
@@ -62,13 +65,63 @@ export class StubMarkdownConverter implements MarkdownConverter {
 
 /** コンストラクタで指定した結果を返す（または reject する）CommandExecutor のスタブ */
 export class StubCommandExecutor implements CommandExecutor {
+  /** execute に渡された command と args の記録 */
+  calls: { command: string; args: string[] }[] = [];
+
   constructor(private behavior: { result: CommandResult } | { error: Error }) {}
 
-  async execute(): Promise<CommandResult> {
+  async execute(command: string, args: string[]): Promise<CommandResult> {
+    this.calls.push({ command, args });
     if ('error' in this.behavior) {
       throw this.behavior.error;
     }
     return this.behavior.result;
+  }
+}
+
+/** validatePandocAvailability の結果を指定できるスタブ。error 指定時はそれを投げる */
+export class StubPandocValidator implements PandocAvailabilityValidator {
+  calls = 0;
+
+  /** @param error 投げるエラー。undefined なら検査成功 */
+  constructor(private error?: Error) {}
+
+  async validatePandocAvailability(): Promise<void> {
+    this.calls++;
+    if (this.error) {
+      throw this.error;
+    }
+  }
+}
+
+/** 受け取ったリクエスト行を記録し、`echo:<行>` を返すスタブ */
+export class EchoRequestHandler implements RequestLineHandler {
+  received: string[] = [];
+
+  async handleRequest(requestLine: string): Promise<string> {
+    this.received.push(requestLine);
+    return `echo:${requestLine}`;
+  }
+}
+
+/** start / stop の呼び出しを記録するソケットサーバーのスタブ。startError 指定時は start が reject する */
+export class StubSocketServer implements SocketServer {
+  /** start に渡されたハンドラー。start が呼ばれていない場合は null */
+  handler: ((requestLine: string) => Promise<string>) | null = null;
+  stopCalls = 0;
+
+  /** @param startError start で投げるエラー。undefined なら start 成功 */
+  constructor(private startError?: Error) {}
+
+  async start(requestHandler: (requestLine: string) => Promise<string>): Promise<void> {
+    if (this.startError) {
+      throw this.startError;
+    }
+    this.handler = requestHandler;
+  }
+
+  async stop(): Promise<void> {
+    this.stopCalls++;
   }
 }
 

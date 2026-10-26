@@ -2,7 +2,8 @@ import {
   ConversionRequest,
   ConversionResult,
   MarkdownConverter,
-  PingResult
+  PingResult,
+  RequestLineHandler
 } from './types';
 import { validateRequest } from './RequestValidator';
 import { createErrorResponse, createSuccessResponse } from './responses';
@@ -11,7 +12,7 @@ import { createErrorResponse, createSuccessResponse } from './responses';
  * JSONリクエストの解析と処理、レスポンスの生成を行うクラス
  * プロトコル仕様: docs-ai/architecture/pandoc-runner-protocol.md
  */
-export class RequestHandler {
+export class RequestHandler implements RequestLineHandler {
   private converter: MarkdownConverter;
 
   constructor(converter: MarkdownConverter) {

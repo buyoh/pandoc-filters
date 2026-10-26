@@ -33,6 +33,16 @@ pnpm start --verbose
 pnpm dev
 ```
 
+## Configuration
+
+| Environment variable | Default | Description |
+| --- | --- | --- |
+| `PF_PANDOC_PATH` | `pandoc` (from `PATH`) | Path to the pandoc executable |
+| `PF_FILTER_PATH` | `<repository root>/dist/src/ToRedmine.js` | Path to the ToRedmine filter. The default does not depend on the working directory. Build it with `pnpm build` at the repository root |
+
+The server exits at startup if the filter file does not exist or pandoc is not available.
+With `docker-compose.yml` (which bind-mounts the repository), run `pnpm build` and `pnpm pandoc-runner:build` at the repository root beforehand; otherwise the `pandoc-runner` container keeps restarting.
+
 ## API
 
 The server accepts JSON requests via Unix socket with the following format:

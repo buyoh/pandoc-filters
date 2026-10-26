@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { PandocConverter } from '../PandocConverter';
+import { DefaultFilterSelector, PandocConverter } from '../PandocConverter';
 import { FilterSelector } from '../types';
 import { StubCommandExecutor } from './stubs';
 
@@ -11,7 +11,7 @@ class NoFilterSelector implements FilterSelector {
 }
 
 function converterWith(executor: StubCommandExecutor): PandocConverter {
-  return new PandocConverter(executor, new NoFilterSelector());
+  return new PandocConverter(executor, new NoFilterSelector(), 'pandoc');
 }
 
 describe('PandocConverter outcome', () => {
@@ -42,5 +42,14 @@ describe('PandocConverter outcome', () => {
     });
     const outcome = await converterWith(executor).convertMarkdownToRedmineTextile('# x');
     assert.deepStrictEqual(outcome, { ok: true, output: '  indented\n\nh1. title' });
+  });
+
+  it('passes the configured pandoc path and filter path to pandoc', async () => {
+    const executor = new StubCommandExecutor({ result: { stdout: 'ok', stderr: '', exitCode: 0, signal: null } });
+    const converter = new PandocConverter(executor, new DefaultFilterSelector('/x/f.js'), '/opt/pandoc');
+    await converter.convertMarkdownToRedmineTextile('# x');
+    assert.deepStrictEqual(executor.calls, [
+      { command: '/opt/pandoc', args: ['-f', 'markdown', '-t', 'textile', '--filter', '/x/f.js'] }
+    ]);
   });
 });
