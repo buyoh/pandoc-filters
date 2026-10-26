@@ -22,5 +22,11 @@
     "output": "custom004-inlinecode-escaping.textile",
     "input_type": "markdown",
     "output_type": "textile"
+  },
+  {
+    "input": "custom005-blockcode-whitespace.md",
+    "output": "custom005-blockcode-whitespace.textile",
+    "input_type": "markdown",
+    "output_type": "textile"
   }
 ]

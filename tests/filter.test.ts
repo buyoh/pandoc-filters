@@ -56,7 +56,7 @@ function runPandoc(args: string[], input: string): string {
     encoding: 'utf8',
     cwd: PROJECT_ROOT,
     input,
-  }).trim();
+  });
 }
 
 /**
@@ -92,9 +92,23 @@ function processForTextileOutput(
 }
 
 /**
- * 出力を正規化（空白やフォーマットの違いを吸収）
+ * textile 出力を正規化する。各行の末尾空白と末尾の改行のみを除去する
+ * 問題: 以前は全形式で各行の trim と空行除去を行っていたため、コードブロック内のインデント変更・空行の増減を検出できなかった
+ * 解決: textile はコードブロック本文をそのまま出力するため、行頭の空白と空行は比較対象として残す
+ * 制限: 行末の空白はエディタ等で失われやすいため除去しており、コード行末尾の空白の変化は検証対象外
  */
-function normalizeOutput(output: string): string {
+function normalizeTextileOutput(output: string): string {
+  return output
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .replace(/\n+$/, '');
+}
+
+/**
+ * textile 以外の出力を正規化（HTML 経由の変換で生じる空白やフォーマットの違いを吸収）
+ */
+function normalizeLooseOutput(output: string): string {
   return output
     .split('\n')
     .map((line) => line.trim())
@@ -145,7 +159,7 @@ describe('Pandoc Filter Snapshot Tests', () => {
       console.log(`Input (${testCase.input}):\n${inputContent}`);
 
       // 期待される結果を読み込み
-      const expectedOutput = readFileSync(outputPath, 'utf8').trim();
+      const expectedOutput = readFileSync(outputPath, 'utf8');
       console.log(`Expected (${testCase.output}):\n${expectedOutput}`);
 
       let actualOutput: string;
@@ -166,8 +180,12 @@ describe('Pandoc Filter Snapshot Tests', () => {
       }
 
       // 正規化して比較
-      const normalizedActual = normalizeOutput(actualOutput);
-      const normalizedExpected = normalizeOutput(expectedOutput);
+      const normalize =
+        testCase.output_type === 'textile'
+          ? normalizeTextileOutput
+          : normalizeLooseOutput;
+      const normalizedActual = normalize(actualOutput);
+      const normalizedExpected = normalize(expectedOutput);
 
       if (normalizedActual !== normalizedExpected) {
         console.log(`\n=== MISMATCH in ${testName} ===`);
@@ -201,8 +219,10 @@ function showDetailedDiff(actual: string, expected: string): void {
   const maxLines = Math.max(actualLines.length, expectedLines.length);
 
   for (let i = 0; i < maxLines; i++) {
-    const actualLine = actualLines[i] || '<missing>';
-    const expectedLine = expectedLines[i] || '<missing>';
+    // 空行も比較対象になったため、falsy 判定ではなく行数で欠落を判定する
+    const actualLine = i < actualLines.length ? actualLines[i] : '<missing>';
+    const expectedLine =
+      i < expectedLines.length ? expectedLines[i] : '<missing>';
 
     if (actualLine !== expectedLine) {
       console.log(`Line ${i + 1}:`);

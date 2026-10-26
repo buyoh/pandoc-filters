@@ -41,9 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Main conversion function
   async function convertText() {
-    const input = inputTextElem.value.trim();
+    // 問題: 送信前に trim していたため、文書先頭のインデント（例: インデントコードブロック）が失われていた
+    // 解決: trim は空判定のみに使い、送信には元の値を使う
+    const input = inputTextElem.value;
 
-    if (!input) {
+    if (!input.trim()) {
       showError('Please enter some text to convert');
       return;
     }
@@ -97,9 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Copy result function
   async function copyResult() {
-    const output = outputTextElem.value.trim();
+    // 入力と同様に、trim は空判定のみに使い、コピーには変換結果をそのまま使う
+    const output = outputTextElem.value;
 
-    if (!output) {
+    if (!output.trim()) {
       showError('No text to copy');
       return;
     }

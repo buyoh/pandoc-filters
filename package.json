@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p ./tsconfig.json && pnpm --filter app-server build",
     "lint": "prettier --write '{src,tests,app-server/src,pandoc-runner/src}/**/*.ts'",
+    "lint:check": "prettier --check '{src,tests,app-server/src,pandoc-runner/src}/**/*.ts'",
     "test": "pnpm run build && node --test dist/tests/filter.test.js",
     "app-server:build": "pnpm --filter app-server build",
     "app-server:start": "pnpm --filter app-server start",
