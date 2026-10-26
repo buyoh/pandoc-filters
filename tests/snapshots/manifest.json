@@ -10,5 +10,17 @@
     "output": "custom002-blockcode.textile",
     "input_type": "markdown",
     "output_type": "textile"
+  },
+  {
+    "input": "custom003-blockcode-escaping.md",
+    "output": "custom003-blockcode-escaping.textile",
+    "input_type": "markdown",
+    "output_type": "textile"
+  },
+  {
+    "input": "custom004-inlinecode-escaping.md",
+    "output": "custom004-inlinecode-escaping.textile",
+    "input_type": "markdown",
+    "output_type": "textile"
   }
 ]

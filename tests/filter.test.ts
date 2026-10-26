@@ -1,9 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+// 注意: tests/snapshots/*.textile の期待値には、Redmine のタグ解釈を避けるためのゼロ幅スペース（U+200B）が意図的に含まれる
 const TESTS_DIR = __dirname;
 const PROJECT_ROOT = join(__dirname, '../../'); // distディレクトリから2階層上がプロジェクトルート
 const SNAPSHOTS_DIR = join(PROJECT_ROOT, 'tests/snapshots');
@@ -46,54 +47,39 @@ function loadTestCases(): TestCase[] {
 }
 
 /**
+ * pandoc をシェルを経由せずに起動し、標準出力を返す。失敗時は例外となりテストが失敗する
+ * @param args pandoc に渡す引数
+ * @param input 標準入力に与える文字列
+ */
+function runPandoc(args: string[], input: string): string {
+  return execFileSync('pandoc', args, {
+    encoding: 'utf8',
+    cwd: PROJECT_ROOT,
+    input,
+  }).trim();
+}
+
+/**
  * pandocフィルターを実行してHTML出力を取得
  */
-function runPandocFilter(inputPath: string, inputType: string = 'markdown'): string {
-  try {
-    const command = `pandoc --from=${inputType} --to=html --filter="${FILTER_PATH}" "${inputPath}"`;
-    const result = execSync(command, { 
-      encoding: 'utf8',
-      cwd: PROJECT_ROOT
-    });
-    return result.trim();
-  } catch (error) {
-    throw new Error(`Pandoc execution failed: ${error}`);
-  }
+function runPandocFilter(inputContent: string, inputType: string): string {
+  return runPandoc([`--from=${inputType}`, '--to=html', '--filter', FILTER_PATH], inputContent);
 }
 
 /**
  * HTMLを指定された形式に変換
  */
 function convertHtmlTo(html: string, outputType: string): string {
-  try {
-    // シングルクォートをエスケープ
-    const escapedHtml = html.replace(/'/g, "'\\''");
-    const command = `echo '${escapedHtml}' | pandoc --from=html --to=${outputType}`;
-    
-    const result = execSync(command, { 
-      encoding: 'utf8',
-      shell: '/bin/bash'
-    });
-    return result.trim();
-  } catch (error) {
-    throw new Error(`HTML to ${outputType} conversion failed: ${error}`);
-  }
+  return runPandoc(['--from=html', `--to=${outputType}`], html);
 }
 
 /**
  * textile出力用の処理（入力を直接textileに変換してフィルターを適用）
+ * pandoc-runner（pandoc-runner/src/PandocConverter.ts）と同じく、引数 `-f <type> -t textile --filter <path>` で
+ * 標準入力から変換する
  */
-async function processForTextileOutput(inputPath: string, inputType: string): Promise<string> {
-  try {
-    const command = `pandoc --from=${inputType} --to=textile --filter="${FILTER_PATH}" "${inputPath}"`;
-    const result = execSync(command, { 
-      encoding: 'utf8',
-      cwd: PROJECT_ROOT
-    });
-    return result.trim();
-  } catch (error) {
-    throw new Error(`Direct textile conversion with filter failed: ${error}`);
-  }
+function processForTextileOutput(inputContent: string, inputType: string): string {
+  return runPandoc(['-f', inputType, '-t', 'textile', '--filter', FILTER_PATH], inputContent);
 }
 
 /**
@@ -139,7 +125,7 @@ describe('Pandoc Filter Snapshot Tests', () => {
   for (const testCase of testCases) {
     const testName = getTestName(testCase);
     
-    it(`${testName}: should transform ${testCase.input_type} to ${testCase.output_type}`, async () => {
+    it(`${testName}: should transform ${testCase.input_type} to ${testCase.output_type}`, () => {
       console.log(`\n=== Testing: ${testName} ===`);
       
       const inputPath = join(SNAPSHOTS_DIR, testCase.input);
@@ -157,22 +143,14 @@ describe('Pandoc Filter Snapshot Tests', () => {
       
       if (testCase.output_type === 'textile') {
         // textileの場合は入力を直接textileに変換してフィルターを適用
-        actualOutput = await processForTextileOutput(inputPath, testCase.input_type);
+        actualOutput = processForTextileOutput(inputContent, testCase.input_type);
         console.log(`Direct textile conversion result:\n${actualOutput}`);
       } else {
-        // その他の形式の場合は従来通りHTML経由で変換
-        const htmlOutput = runPandocFilter(inputPath, testCase.input_type);
+        // その他の形式の場合は従来通りHTML経由で変換。変換失敗時はフォールバックせずテストを失敗させる
+        const htmlOutput = runPandocFilter(inputContent, testCase.input_type);
         console.log(`HTML Output:\n${htmlOutput}`);
-        
-        try {
-          actualOutput = convertHtmlTo(htmlOutput, testCase.output_type);
-          console.log(`Converted to ${testCase.output_type}:\n${actualOutput}`);
-        } catch (error) {
-          console.warn(`Could not convert HTML to ${testCase.output_type}: ${error}`);
-          // 変換に失敗した場合はHTMLの内容を直接検証
-          validateHtmlContent(htmlOutput, testName, expectedOutput);
-          return;
-        }
+        actualOutput = convertHtmlTo(htmlOutput, testCase.output_type);
+        console.log(`Converted to ${testCase.output_type}:\n${actualOutput}`);
       }
       
       // 正規化して比較
@@ -199,44 +177,6 @@ describe('Pandoc Filter Snapshot Tests', () => {
     });
   }
 });
-
-/**
- * HTMLの内容を直接検証（形式変換が失敗した場合のフォールバック）
- */
-function validateHtmlContent(html: string, testName: string, expectedOutput: string): void {
-  console.log(`Validating HTML content directly for ${testName}`);
-  
-  if (testName.includes('inlinecode')) {
-    assert(html.includes('<code>'), 'Should contain inline code tags');
-    // 期待される出力からインラインコードの内容を確認
-    if (expectedOutput.includes('<code>code</code>')) {
-      assert(html.includes('<code>code</code>'), 'Should contain specific inline code content');
-    }
-  }
-  
-  if (testName.includes('blockcode')) {
-    assert(html.includes('<pre><code'), 'Should contain block code structure');
-    
-    // PlantUMLの特別処理を確認
-    if (expectedOutput.includes('{{plantuml')) {
-      assert(html.includes('{{plantuml'), 'PlantUML should use special Redmine syntax');
-    }
-    
-    // 各種言語クラスの確認
-    if (expectedOutput.includes('class="html"')) {
-      // nested preタグがない場合のみクラスが含まれるべき
-      const htmlContent = html.toLowerCase();
-      const hasNestedPre = htmlContent.includes('<pre><code') && 
-                          htmlContent.indexOf('<pre>') !== htmlContent.lastIndexOf('<pre>');
-      
-      if (!hasNestedPre) {
-        assert(html.includes('class="html"'), 'Should include language class when no nested pre tag');
-      }
-    }
-  }
-  
-  console.log(`✓ HTML content validation passed for ${testName}`);
-}
 
 /**
  * 詳細な差分を表示

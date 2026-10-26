@@ -1,0 +1,16 @@
+<pre><code class="python">
+print(1)</code></pre>
+
+{{plantuml
+A -> B
+}}
+
+<pre><code class="ab">
+z</code></pre>
+
+<pre><code>
+empty</code></pre>
+
+<pre><code>
+<​/code><​/pre><b>x</b>
+<​kbd>k<​/kbd> <​notextile> <​CODE class="q"><​/Pre ></code></pre>

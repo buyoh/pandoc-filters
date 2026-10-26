@@ -7,10 +7,10 @@ block</code></pre>
   html
 </div></code></pre>
 
-<pre><code>
-<pre>
+<pre><code class="html">
+<​pre>
   preformatted
-</pre></code></pre>
+<​/pre></code></pre>
 
 {{plantuml
 @startuml
