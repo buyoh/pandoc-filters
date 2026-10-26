@@ -20,7 +20,7 @@ export interface ConversionResponse {
 
 /**
  * pandoc-runnerサーバーへのUnixSocket通信用リクエスト型
- * Ruby側のRequestHandlerが期待するJSON形式と一致
+ * pandoc-runner（pandoc-runner/src/RequestHandler.ts）が期待するJSON形式と一致
  */
 export interface PandocRequest {
   action: 'convert' | 'ping';
@@ -31,7 +31,7 @@ export interface PandocRequest {
 
 /**
  * pandoc-runnerサーバーからのUnixSocket通信用レスポンス型
- * Ruby側のRequestHandlerが返すJSON形式と一致
+ * pandoc-runner（pandoc-runner/src/RequestHandler.ts）が返すJSON形式と一致
  */
 export interface PandocResponse {
   success: boolean;

@@ -40,3 +40,6 @@ build/
 /sample
 
 /tmp
+
+# Trash (moved instead of rm)
+/.trash

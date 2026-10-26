@@ -16,8 +16,9 @@
     "app-server:dev:watch": "yarn workspace app-server dev:watch",
     "app-server:test": "yarn workspace app-server test",
     "app-server:test:watch": "yarn workspace app-server test:watch",
-    "pandoc-runner:test": "cd pandoc-runner && bundle exec rake test",
-    "pandoc-runner:start": "cd pandoc-runner && ruby pandoc-runner.rb"
+    "pandoc-runner:build": "yarn workspace pandoc-runner build",
+    "pandoc-runner:test": "yarn workspace pandoc-runner test",
+    "pandoc-runner:start": "cd pandoc-runner && node dist/index.js"
   },
   "dependencies": {
     "pandoc-filter": "^2.2.0"
