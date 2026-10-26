@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Express } from 'express';
 import { createServer } from 'http';
 import path from 'path';
 import { ConversionController } from './controllers/ConversionController';
@@ -62,7 +62,11 @@ Examples:
 }
 
 const config = parseArguments();
-const app = express();
+// pnpm 移行時の不具合: declaration: true の下で app の型を推論させると、
+// pnpm の node_modules 配置では推論型が参照する @types/express-serve-static-core を
+// app-server から直接解決できず TS2742 でビルドが失敗する。
+// express が再エクスポートする Express 型を明示して解決する。
+const app: Express = express();
 const port = config.port;
 
 // Middleware

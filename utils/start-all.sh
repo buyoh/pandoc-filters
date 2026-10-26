@@ -21,7 +21,7 @@ PANDOC_RUNNER_PID=$!
 echo $PANDOC_RUNNER_PID >> "$PID_LIST"
 
 # Start app-server
-yarn app-server:build
+pnpm app-server:build
 (cd app-server && exec node dist/index.js --pandoc-socket-path "$PANDOC_RUNNER_SOCKET" >> "$APP_SERVER_LOG" 2>&1) &
 APP_SERVER_PID=$!
 echo $APP_SERVER_PID >> "$PID_LIST"

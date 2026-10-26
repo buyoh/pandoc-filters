@@ -2,22 +2,19 @@
   "name": "pandoc-filters",
   "private": true,
   "license": "MIT",
-  "workspaces": [
-    "app-server",
-    "pandoc-runner"
-  ],
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
-    "build": "tsc -p ./tsconfig.json && yarn workspace app-server build",
+    "build": "tsc -p ./tsconfig.json && pnpm --filter app-server build",
     "lint": "prettier --write 'src/**/*.ts'",
-    "test": "npm run build && node --test dist/tests/filter.test.js",
-    "app-server:build": "yarn workspace app-server build",
-    "app-server:start": "yarn workspace app-server start",
-    "app-server:dev": "yarn workspace app-server dev",
-    "app-server:dev:watch": "yarn workspace app-server dev:watch",
-    "app-server:test": "yarn workspace app-server test",
-    "app-server:test:watch": "yarn workspace app-server test:watch",
-    "pandoc-runner:build": "yarn workspace pandoc-runner build",
-    "pandoc-runner:test": "yarn workspace pandoc-runner test",
+    "test": "pnpm run build && node --test dist/tests/filter.test.js",
+    "app-server:build": "pnpm --filter app-server build",
+    "app-server:start": "pnpm --filter app-server start",
+    "app-server:dev": "pnpm --filter app-server dev",
+    "app-server:dev:watch": "pnpm --filter app-server dev:watch",
+    "app-server:test": "pnpm --filter app-server test",
+    "app-server:test:watch": "pnpm --filter app-server test:watch",
+    "pandoc-runner:build": "pnpm --filter pandoc-runner build",
+    "pandoc-runner:test": "pnpm --filter pandoc-runner test",
     "pandoc-runner:start": "cd pandoc-runner && node dist/index.js"
   },
   "dependencies": {

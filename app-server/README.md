@@ -10,31 +10,31 @@ Express TypeScript web server for pandoc conversion API.
 
 ```bash
 # ルートディレクトリから依存関係をインストール
-yarn install
+pnpm install --frozen-lockfile
 
 # app-serverワークスペースをビルド
-yarn workspace app-server build
+pnpm --filter app-server build
 ```
 
 ## 実行
 
 ```bash
 # サーバーを起動（本番用）
-yarn workspace app-server start
+pnpm --filter app-server start
 
 # 開発用（TypeScriptファイルを直接実行）
-yarn workspace app-server dev
+pnpm --filter app-server dev
 
 # 開発用（ファイル変更監視付き）
-yarn workspace app-server dev:watch
+pnpm --filter app-server dev:watch
 
 # カスタムソケットパスとポートでの起動
 node dist/index.js --pandoc-socket-path /tmp/custom.sock --port 8080
 
 # ルートディレクトリからの実行
-yarn app-server:start
-yarn app-server:dev
-yarn app-server:dev:watch
+pnpm app-server:start
+pnpm app-server:dev
+pnpm app-server:dev:watch
 ```
 
 サーバー起動後、ブラウザで `http://localhost:3000` にアクセスしてWebアプリケーションを使用できます。
@@ -118,17 +118,17 @@ curl -X POST http://localhost:3000/api/v1/sync/convert \
 
 ```bash
 # テスト実行（TypeScriptファイルを直接実行）
-yarn workspace app-server test
+pnpm --filter app-server test
 
 # テスト実行（ファイル変更監視付き）
-yarn workspace app-server test:watch
+pnpm --filter app-server test:watch
 
 # ルートディレクトリからの実行
-yarn app-server:test
-yarn app-server:test:watch
+pnpm app-server:test
+pnpm app-server:test:watch
 
 # 従来方式（ビルド後にテスト実行）
-yarn workspace app-server build && node --test dist/tests/**/*.test.js
+pnpm --filter app-server build && node --test dist/tests/**/*.test.js
 ```
 
 ## プロジェクト構造

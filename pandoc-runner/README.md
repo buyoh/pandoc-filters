@@ -13,24 +13,24 @@ TypeScript implementation of the pandoc server with Unix socket communication.
 ## Installation
 
 ```bash
-npm install
-npm run build
+pnpm install --frozen-lockfile
+pnpm build
 ```
 
 ## Usage
 
 ```bash
 # Start the server
-npm start
+pnpm start
 
 # Start with custom socket path
-npm start -- --socket /tmp/custom-pandoc-runner.sock
+pnpm start --socket /tmp/custom-pandoc-runner.sock
 
 # Start with verbose logging
-npm start -- --verbose
+pnpm start --verbose
 
 # Development mode
-npm run dev
+pnpm dev
 ```
 
 ## API
@@ -57,13 +57,13 @@ The server accepts JSON requests via Unix socket with the following format:
 ## Testing
 
 ```bash
-npm test
-npm run test:watch
+pnpm test
+pnpm test:watch
 ```
 
 ## Build
 
 ```bash
-npm run build
-npm run clean
+pnpm build
+pnpm clean
 ```

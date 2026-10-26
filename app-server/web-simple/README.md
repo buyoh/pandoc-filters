@@ -43,7 +43,7 @@ web-simple/
 
 ```bash
 # サーバー起動
-yarn app-server:dev
+pnpm app-server:dev
 
 # ブラウザでアクセス
 http://localhost:3000
