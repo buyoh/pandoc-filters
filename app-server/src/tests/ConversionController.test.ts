@@ -139,18 +139,31 @@ describe('ConversionController', () => {
       });
       const result = await new ConversionController(client).handle({
         input: 'a',
-        from_format: 'gfm',
-        to_format: 'plain',
+        from_format: 'markdown',
+        to_format: 'redmine-textile',
       });
 
       assert.deepStrictEqual(client.lastArgs, {
         input: 'a',
-        fromFormat: 'gfm',
-        toFormat: 'plain',
+        fromFormat: 'markdown',
+        toFormat: 'redmine-textile',
       });
       assert.ok(result.body.success);
-      assert.strictEqual(result.body.data.from_format, 'gfm');
-      assert.strictEqual(result.body.data.to_format, 'plain');
+      assert.strictEqual(result.body.data.from_format, 'markdown');
+      assert.strictEqual(result.body.data.to_format, 'redmine-textile');
+    });
+
+    it('returns 400 without calling the client for unsupported formats', async () => {
+      const client = new StubPandocSocketClient({
+        result: { ok: true, output: 'x' },
+      });
+      const result = await new ConversionController(client).handle({
+        input: 'a',
+        from_format: 'gfm',
+      });
+
+      assert.strictEqual(result.status, 400);
+      assert.strictEqual(client.callCount, 0);
     });
 
     it('converts unexpected errors to a 500 result instead of throwing', async () => {

@@ -2,6 +2,8 @@ import express, { type Express } from 'express';
 import path from 'path';
 import { ConversionController } from './controllers/ConversionController';
 import { errorHandler } from './middleware/errorHandler';
+import { requireJson } from './middleware/requireJson';
+import { securityHeaders } from './middleware/securityHeaders';
 import { PandocSocketClient } from './types';
 
 /** createApp に注入する依存 */
@@ -27,14 +29,18 @@ export function createApp(deps: AppDependencies): Express {
   const { webAppPath } = deps;
   const indexHtmlPath = path.join(webAppPath, 'index.html');
 
+  app.disable('x-powered-by');
+  app.use(securityHeaders);
+  // urlencoded パーサは使わない。フロントエンドは JSON のみを送り、フォーム POST を受け付けると
+  // 他サイトからプリフライト無しで変換 API を叩けるため（requireJson 参照）
   app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
 
   app.use(express.static(webAppPath));
 
   const conversionController = new ConversionController(deps.pandocClient);
   app.post(
     '/api/v1/sync/convert',
+    requireJson,
     conversionController.convertSync.bind(conversionController)
   );
 

@@ -60,7 +60,9 @@ docker build -f app-server/Dockerfile -t app-server .
 
 ### POST /api/v1/sync/convert
 
-ドキュメントを同期的に変換します。
+ドキュメントを同期的に変換します。リクエストは `Content-Type: application/json` のみ受け付ける（フォーム形式等は 415）。
+
+`from_format` は `markdown`、`to_format` は `redmine-textile` のみ対応（省略時も同じ値）。それ以外は 400。
 
 **リクエスト**
 ```json
@@ -183,10 +185,13 @@ app-server/
 
 エラー時の `error` は固定文言で、内部情報（ソケットパスや pandoc のエラー出力など）は含まない。詳細はサーバーのログに出力される。
 
-- 400: 不正なリクエスト（入力データの検証エラー、`from_format` / `to_format` が文字列でない、不正な JSON、未対応の変換形式）
+- 400: 不正なリクエスト（入力データの検証エラー、`from_format` / `to_format` が文字列でない・未対応の値、不正な JSON）
 - 413: リクエストボディが大きすぎる
+- 415: `Content-Type` が `application/json` でない
 - 502: 変換エラー、または pandoc-runner から想定外の応答
 - 503: pandoc-runnerサーバーが利用できない
 - 500: 内部サーバーエラー
+
+全レスポンスに `Content-Security-Policy`（`default-src 'self'`、`frame-ancestors 'none'` 等）・`X-Content-Type-Options: nosniff`・`X-Frame-Options: DENY`・`Referrer-Policy: no-referrer` を付与し、`X-Powered-By` は返さない。web-simple ではインラインの script / style（`style` 属性を含む）を使わないこと。
 
 `/api` 配下の存在しないパスには `{"error": "Not Found", "message": "API route <METHOD> <path> not found"}` を 404 で返す。

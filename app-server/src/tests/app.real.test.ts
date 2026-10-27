@@ -88,18 +88,87 @@ describe('createApp (HTTP routing)', () => {
     );
   });
 
-  it('rejects nested urlencoded formats with 400', async () => {
+  it('rejects non-JSON bodies with 415 without calling the client', async () => {
+    // 以前は urlencoded パーサが有効で、他サイトのフォームからプリフライト無しで変換 API を叩けた（code-review 08 (2)）
+    const cases: { contentType?: string; body?: string }[] = [
+      {
+        contentType: 'application/x-www-form-urlencoded',
+        body: 'input=a&from_format[x]=1',
+      },
+      { contentType: 'text/plain', body: JSON.stringify({ input: '# Hi' }) },
+      { contentType: 'multipart/form-data; boundary=x', body: '--x--' },
+      {},
+    ];
+    for (const { contentType, body } of cases) {
+      const res = await fetch(`${baseUrl}/api/v1/sync/convert`, {
+        method: 'POST',
+        headers:
+          contentType !== undefined ? { 'Content-Type': contentType } : {},
+        body,
+      });
+      assert.strictEqual(res.status, 415, String(contentType));
+      assert.strictEqual(
+        (await jsonOf(res)).error,
+        'Content-Type must be application/json'
+      );
+    }
+    assert.strictEqual(client.callCount, 0);
+  });
+
+  it('accepts application/json with a charset parameter', async () => {
     const res = await fetch(`${baseUrl}/api/v1/sync/convert`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'input=a&from_format[x]=1',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ input: '# Hi' }),
     });
-    assert.strictEqual(res.status, 400);
-    assert.strictEqual(
-      (await jsonOf(res)).error,
-      'Invalid input: from_format and to_format must be strings'
+    assert.strictEqual(res.status, 200);
+  });
+
+  it('returns 400 for unsupported formats', async () => {
+    const res = await postJson(
+      '/api/v1/sync/convert',
+      JSON.stringify({ input: '# Hi', to_format: 'html' })
     );
+    assert.strictEqual(res.status, 400);
     assert.strictEqual(client.callCount, 0);
+  });
+
+  it('sets security headers and hides X-Powered-By on pages, static files, API and 404', async () => {
+    // 以前はセキュリティヘッダが無く、X-Powered-By: Express を返していた（code-review 08 (1)）
+    const responses = [
+      await fetch(`${baseUrl}/`),
+      await fetch(`${baseUrl}/style.css`),
+      await fetch(`${baseUrl}/health`),
+      await postJson('/api/v1/sync/convert', JSON.stringify({ input: 'a' })),
+      await fetch(`${baseUrl}/api/unknown`),
+      await postJson('/api/v1/sync/convert', '{ invalid'),
+    ];
+    for (const res of responses) {
+      const label = `${res.url} ${res.status}`;
+      assert.strictEqual(res.headers.get('x-powered-by'), null, label);
+      assert.strictEqual(
+        res.headers.get('x-content-type-options'),
+        'nosniff',
+        label
+      );
+      assert.strictEqual(res.headers.get('x-frame-options'), 'DENY', label);
+      assert.strictEqual(
+        res.headers.get('referrer-policy'),
+        'no-referrer',
+        label
+      );
+      const csp = res.headers.get('content-security-policy') ?? '';
+      assert.match(csp, /default-src 'self'/, label);
+      assert.match(csp, /frame-ancestors 'none'/, label);
+    }
+  });
+
+  it('serves index.html without inline styles or scripts blocked by the CSP', () => {
+    // CSP の style-src / script-src は 'self' のみ。インラインの style 属性・<style>・<script> 本文は無効になる
+    assert.doesNotMatch(indexHtml, /\sstyle\s*=/i);
+    assert.doesNotMatch(indexHtml, /<style[\s>]/i);
+    assert.doesNotMatch(indexHtml, /<script(?![^>]*\ssrc=)[^>]*>/i);
+    assert.doesNotMatch(indexHtml, /\son[a-z]+\s*=/i);
   });
 
   it('responds to GET /health', async () => {

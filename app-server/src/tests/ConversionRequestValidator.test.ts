@@ -7,6 +7,8 @@ const INPUT_REQUIRED =
 const INPUT_EMPTY = 'Invalid input: input cannot be empty';
 const FORMAT_NOT_STRING =
   'Invalid input: from_format and to_format must be strings';
+const FORMAT_UNSUPPORTED =
+  'Invalid input: unsupported from_format or to_format';
 
 describe('validateConversionRequest', () => {
   it('fills default formats', () => {
@@ -20,18 +22,39 @@ describe('validateConversionRequest', () => {
     });
   });
 
-  it('keeps the given formats', () => {
+  it('accepts the supported formats given explicitly', () => {
     assert.deepStrictEqual(
       validateConversionRequest({
         input: '# a',
-        from_format: 'gfm',
-        to_format: 'x',
+        from_format: 'markdown',
+        to_format: 'redmine-textile',
       }),
       {
         ok: true,
-        request: { input: '# a', fromFormat: 'gfm', toFormat: 'x' },
+        request: {
+          input: '# a',
+          fromFormat: 'markdown',
+          toFormat: 'redmine-textile',
+        },
       }
     );
+  });
+
+  it('rejects unsupported formats without echoing them', () => {
+    // 以前は許可リストを検証せず、任意の文字列を runner に渡していた（code-review 08 (3)）
+    for (const body of [
+      { input: 'a', from_format: 'gfm' },
+      { input: 'a', to_format: 'plain' },
+      { input: 'a', from_format: '' },
+      { input: 'a', from_format: 'Markdown' },
+      { input: 'a', from_format: 'redmine-textile', to_format: 'markdown' },
+    ]) {
+      assert.deepStrictEqual(
+        validateConversionRequest(body),
+        { ok: false, error: FORMAT_UNSUPPORTED },
+        JSON.stringify(body)
+      );
+    }
   });
 
   it('rejects non-object bodies', () => {
