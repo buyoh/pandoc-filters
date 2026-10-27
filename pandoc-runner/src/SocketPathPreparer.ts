@@ -35,6 +35,9 @@ export type PrepareSocketPathResult =
  *
  * 以前は種類を確認せずに unlink しており、稼働中の別インスタンスのソケットや、
  * 誤って指定した通常ファイルも削除していた
+ *
+ * 検査から削除までの間は排他しない。2 つのインスタンスが同時に起動すると、後から削除した側が
+ * 先に listen したソケットを消し得るが、同じパスでの同時起動は運用上想定しないため許容する
  */
 export async function prepareSocketPath(
   socketPath: string,

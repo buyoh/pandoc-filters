@@ -12,7 +12,7 @@ import {
   validateRunnerConfig,
 } from './RunnerConfig';
 import { installSignalHandlers } from './SignalHandlers';
-import { ConversionError } from './types';
+import { ConversionError, SocketStartError } from './types';
 
 /**
  * メイン実行関数
@@ -75,6 +75,8 @@ async function main(): Promise<void> {
       console.error(
         'Please make sure pandoc is installed and available in PATH (or set PF_PANDOC_PATH)'
       );
+    } else if (error instanceof SocketStartError) {
+      console.error(`Error: ${error.message}`);
     } else {
       console.error(`Unexpected error: ${error}`);
     }

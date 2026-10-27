@@ -83,6 +83,23 @@ describe('installSignalHandlers', () => {
     assert.deepStrictEqual(target.exitCodes, [0]);
   });
 
+  it('ignores a second, different signal while stopping', async () => {
+    // 以前は SIGINT の後の SIGTERM で stop() が再度呼ばれ、接続の終了待ちを打ち切って exit していた
+    const target = new StubSignalTarget();
+    const server = new DeferredServer();
+    installSignalHandlers(target, server, new SilentLogger());
+
+    target.listeners[0].listener();
+    target.listeners[1].listener();
+    await flushMicrotasks();
+    assert.strictEqual(server.stopCalls, 1);
+    assert.deepStrictEqual(target.exitCodes, []);
+
+    server.finishStop();
+    await flushMicrotasks();
+    assert.deepStrictEqual(target.exitCodes, [0]);
+  });
+
   it('exits with code 1 if stopping the server fails', async () => {
     const target = new StubSignalTarget();
     const server = new DeferredServer();

@@ -2,6 +2,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import { Logger, SocketServer } from './types';
 import { ClientConnection } from './ClientConnection';
+import { SocketStartError } from './types';
 import {
   FsSocketPathOperations,
   prepareSocketPath,
@@ -35,11 +36,8 @@ export class UnixSocketServer implements SocketServer {
   private running = false;
   /** 接続中のクライアント。stop() でタイムアウト後に破棄するために保持する */
   private connections = new Set<net.Socket>();
-  /**
-   * ソケットファイルをこのインスタンスが作成したか。listen に成功するまで false で、
-   * 起動に失敗した場合に既存の（他プロセスの）ファイルを stop() で削除しないために使う
-   */
-  private ownsSocketFile = false;
+  /** 実行中の stop() の Promise。stop() が複数回呼ばれた場合（2 つ目のシグナル等）は同じものを返す */
+  private stopping: Promise<void> | null = null;
   private shutdownTimeoutMs: number;
   private socketMode: number;
   private pathOperations: SocketPathOperations;
@@ -68,7 +66,7 @@ export class UnixSocketServer implements SocketServer {
       this.pathOperations
     );
     if (!prepared.ok) {
-      throw new Error(prepared.message);
+      throw new SocketStartError(prepared.message);
     }
 
     return new Promise((resolve, reject) => {
@@ -89,12 +87,14 @@ export class UnixSocketServer implements SocketServer {
       });
 
       this.server.listen(this.socketPath, () => {
-        this.ownsSocketFile = true;
         // 以前はパーミッションを umask 任せにしており、umask によっては同一ホストの他ユーザが接続できた。
         // listen から chmod までのわずかな間は umask に従う
         try {
           fs.chmodSync(this.socketPath, this.socketMode);
         } catch (error) {
+          // パーミッションを絞れないまま待ち受けを続けないよう、閉じてから失敗を伝える
+          this.running = false;
+          this.server!.close();
           reject(error);
           return;
         }
@@ -108,19 +108,23 @@ export class UnixSocketServer implements SocketServer {
 
   /**
    * サーバーを停止する。新規接続の受け付けを止め、処理中の接続の終了を shutdownTimeoutMs まで待つ。
-   * 経過後も残っている接続（アイドル接続・応答待ちの接続）は破棄する
+   * 経過後も残っている接続（アイドル接続・応答待ちの接続）は破棄する。
+   * ソケットファイルは server.close() の時点で Node（libuv）が削除する
    */
   async stop(): Promise<void> {
+    if (this.stopping) {
+      return this.stopping;
+    }
     if (!this.running || !this.server) {
       return;
     }
+    this.running = false;
+    const server = this.server;
 
-    return new Promise((resolve) => {
-      this.running = false;
-
+    this.stopping = new Promise((resolve) => {
       // バグ修正: 以前は server.close() のみで、接続が残っている間 close のコールバックが呼ばれず
       // stop() が完了しなかった。そのためシグナル受信時は stop() を待たずに exit しており、
-      // ソケットファイルの削除・停止ログが実行されなかった。待ち時間に上限を設け、超過分の接続は破棄する
+      // 処理中のリクエストが打ち切られ、停止ログも出力されなかった。待ち時間に上限を設け、超過分の接続は破棄する
       const timer = setTimeout(() => {
         this.logger.warn(
           `Destroying ${this.connections.size} connection(s) still open after ${this.shutdownTimeoutMs}ms`
@@ -130,29 +134,16 @@ export class UnixSocketServer implements SocketServer {
         }
       }, this.shutdownTimeoutMs);
 
-      this.server!.close(() => {
+      // バグ修正: 以前は close のコールバックでもソケットパスを unlink していたが、パスは close() の時点で
+      // 既に削除されており、接続の終了を待つ間に別インスタンスが同じパスで起動すると、そのソケットを削除していた。
+      // 削除は Node に任せ、ここでは unlink しない
+      server.close(() => {
         clearTimeout(timer);
-        this.cleanupSocket();
+        this.stopping = null;
         this.logger.info('UnixSocket server stopped');
         resolve();
       });
     });
-  }
-
-  /**
-   * このインスタンスが作成したソケットファイルを削除する
-   */
-  private cleanupSocket(): void {
-    if (!this.ownsSocketFile) {
-      return;
-    }
-    this.ownsSocketFile = false;
-    try {
-      if (fs.existsSync(this.socketPath)) {
-        fs.unlinkSync(this.socketPath);
-      }
-    } catch (error) {
-      this.logger.warn(`Failed to cleanup socket: ${error}`);
-    }
+    return this.stopping;
   }
 }

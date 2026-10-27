@@ -109,6 +109,66 @@ describe('UnixSocketServer.stop (real socket)', () => {
   );
 
   it(
+    'does not remove the socket of a server started on the same path while draining',
+    { timeout: 5000 },
+    async () => {
+      // 以前は close のコールバックでもパスを unlink しており、接続の終了を待つ間に
+      // 同じパスで起動した別インスタンスのソケットを削除していた
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const first = new UnixSocketServer(stopSocketPath, new SilentLogger(), {
+        shutdownTimeoutMs: 200,
+      });
+      await first.start(async (line) => `first:${line}`);
+      const idle = await connect();
+      idle.on('error', () => {});
+      const firstStopped = first.stop();
+
+      const second = new UnixSocketServer(stopSocketPath, new SilentLogger());
+      await second.start(async (line) => `second:${line}`);
+      try {
+        await firstStopped;
+        assert.ok(fs.lstatSync(stopSocketPath).isSocket());
+        const client = await connect();
+        client.setEncoding('utf8');
+        const response = new Promise<string>((resolve) =>
+          client.on('data', (data: string) => {
+            client.destroy();
+            resolve(data);
+          })
+        );
+        client.write('ping\n');
+        assert.strictEqual(await response, 'second:ping\n');
+      } finally {
+        await second.stop();
+      }
+    }
+  );
+
+  it(
+    'does not finish a second stop call before the first finishes draining',
+    { timeout: 5000 },
+    async () => {
+      // 以前は 2 回目の stop() が即座に完了し、2 つ目のシグナルで接続の終了待ちを打ち切っていた
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const server = new UnixSocketServer(stopSocketPath, new SilentLogger(), {
+        shutdownTimeoutMs: 200,
+      });
+      await server.start(async (line) => line);
+      const client = await connect();
+      const closed = new Promise((resolve) => client.on('close', resolve));
+
+      const firstStop = server.stop();
+      let secondDone = false;
+      const secondStop = server.stop().then(() => (secondDone = true));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.strictEqual(secondDone, false);
+
+      await Promise.all([firstStop, secondStop]);
+      await closed;
+    }
+  );
+
+  it(
     'lets an in-flight request finish before closing',
     { timeout: 5000 },
     async () => {

@@ -122,6 +122,14 @@ export interface Logger {
   error(message: string): void;
 }
 
+/** ソケットパスが使用中・ソケット以外のファイルである等、待ち受けを開始できないことを表す例外 */
+export class SocketStartError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SocketStartError';
+  }
+}
+
 /** pandoc が利用できない等、起動時の致命的な失敗を表す例外 */
 export class ConversionError extends Error {
   constructor(message: string) {
