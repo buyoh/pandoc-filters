@@ -12,7 +12,7 @@ services:
     working_dir: /opt/pandoc-filters/pandoc-runner
     volumes:
       - .:/opt/pandoc-filters:ro
-      - common:/var/opt/common
+      - pandoc-socket:/var/opt/common
       - ./third_party/pandoc:/opt/pandoc:ro
     environment:
       NODE_ENV: production
@@ -29,7 +29,7 @@ services:
     working_dir: /opt/pandoc-filters/app-server
     volumes:
       - .:/opt/pandoc-filters:ro
-      - common:/var/opt/common
+      - pandoc-socket:/var/opt/common
     ports:
       - "127.0.0.1:3000:3000"
     environment:
@@ -41,8 +41,9 @@ services:
 
 volumes:
   # ソケット共有用。named volume の既定ではマウントポイントが root 所有になり、非 root の runner が
-  # ソケットを作成できないため、所有者を指定した tmpfs にする（再起動時に古いソケットも残らない）
-  common:
+  # ソケットを作成できないため、所有者を指定した tmpfs にする（再起動時に古いソケットも残らない）。
+  # 以前の root 所有の volume（common）が再利用されないよう名前を変えている
+  pandoc-socket:
     driver: local
     driver_opts:
       type: tmpfs
