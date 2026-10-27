@@ -43,6 +43,8 @@ pnpm dev
 The server exits at startup if the filter file does not exist or pandoc is not available.
 With `docker-compose.yml` (which bind-mounts the repository), run `pnpm build` and `pnpm pandoc-runner:build` at the repository root beforehand; otherwise the `pandoc-runner` container keeps restarting.
 
+On SIGINT / SIGTERM the server stops accepting connections, waits up to 5 seconds for in-flight requests, destroys any remaining connections, removes the socket file and exits.
+
 ## API
 
 The server accepts JSON requests via Unix socket with the following format:

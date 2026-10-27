@@ -21,13 +21,19 @@ export function installSignalHandlers(
 ): void {
   // バグ修正: 以前は index.ts と PandocRunnerServer の双方が SIGINT/SIGTERM ハンドラーを登録しており、
   // 停止処理が二重に走っていた。プロセス全体に関わるシグナル処理は composition root からのみ、この関数で登録する。
-  // 接続中のクライアントを待つと終了しない可能性があるため、停止の完了を待たずに終了する。
-  // そのためソケットファイルは残るが、次回起動時に UnixSocketServer.start が削除する
+  // また以前は stop() の完了を待たずに exit しており、ソケットファイルの削除・停止ログが実行されず、
+  // 処理中のリクエストも打ち切られていた。stop() の完了を待ってから終了する
+  // （stop() は接続の待ち時間に上限があるため、接続が残っていても終了する）
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     target.once(signal, () => {
       logger.info(`Received ${signal} signal`);
-      void server.stop();
-      target.exit(0);
+      server.stop().then(
+        () => target.exit(0),
+        (error) => {
+          logger.error(`Failed to stop server: ${error}`);
+          target.exit(1);
+        }
+      );
     });
   }
 }

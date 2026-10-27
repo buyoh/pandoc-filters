@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { createApp } from './app';
 import { parseArgs } from './config';
 import { PandocSocketClientImpl } from './services/PandocSocketClientImpl';
+import { installShutdownHandlers } from './shutdown';
 
 /**
  * メイン実行関数。引数解析・組み立て・待ち受けを行う。process.exit はこの関数でのみ呼ぶ
@@ -38,6 +39,7 @@ function main(): void {
     console.log(`Server running on port ${config.port}`);
     console.log(`Using pandoc-runner socket: ${config.socketPath}`);
   });
+  installShutdownHandlers(process, server);
 }
 
 if (require.main === module) {

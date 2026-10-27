@@ -74,3 +74,70 @@ describe('UnixSocketServer (real socket)', () => {
     }
   );
 });
+
+describe('UnixSocketServer.stop (real socket)', () => {
+  const stopSocketPath = path.join(tmpDir, `pr-stop-${process.pid}.sock`);
+
+  function connect(): Promise<net.Socket> {
+    return new Promise((resolve, reject) => {
+      const client = net.createConnection(stopSocketPath, () =>
+        resolve(client)
+      );
+      client.on('error', reject);
+    });
+  }
+
+  it(
+    'completes and removes the socket file even if an idle client stays connected',
+    { timeout: 5000 },
+    async () => {
+      // 以前は接続が残っていると server.close() のコールバックが呼ばれず、stop() が完了しなかった
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const server = new UnixSocketServer(stopSocketPath, new SilentLogger(), {
+        shutdownTimeoutMs: 100,
+      });
+      await server.start(async (line) => line);
+      const client = await connect();
+      const closed = new Promise((resolve) => client.on('close', resolve));
+
+      await server.stop();
+
+      assert.strictEqual(fs.existsSync(stopSocketPath), false);
+      await closed;
+    }
+  );
+
+  it(
+    'lets an in-flight request finish before closing',
+    { timeout: 5000 },
+    async () => {
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const server = new UnixSocketServer(stopSocketPath, new SilentLogger(), {
+        shutdownTimeoutMs: 2000,
+      });
+      let received!: () => void;
+      const requestReceived = new Promise<void>((r) => (received = r));
+      await server.start(async (line) => {
+        received();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return `done:${line}`;
+      });
+
+      const client = await connect();
+      client.setEncoding('utf8');
+      let data = '';
+      client.on('data', (chunk: string) => (data += chunk));
+      const clientClosed = new Promise((resolve) =>
+        client.on('close', resolve)
+      );
+      client.write('req\n');
+      client.end();
+      await requestReceived;
+
+      await server.stop();
+      await clientClosed;
+
+      assert.strictEqual(data, 'done:req\n');
+    }
+  );
+});

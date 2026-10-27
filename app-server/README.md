@@ -56,6 +56,8 @@ docker build -f app-server/Dockerfile -t app-server .
 
 不正な引数（未知のオプション、範囲外・数字以外のポート番号）や不正な `PORT` 環境変数を指定した場合はエラーを表示して終了コード 1 で終了する。`--port` を指定した場合 `PORT` は参照しない。
 
+SIGINT / SIGTERM を受信すると新規接続の受け付けを止め、処理中のリクエストの完了を最大 5 秒待ってから終了する（超過した接続は切断する）。Docker で動かす場合は node が PID 1 にならないよう `init: true`（`docker run --init`）を指定する。
+
 ## API エンドポイント
 
 ### POST /api/v1/sync/convert
@@ -153,7 +155,9 @@ app-server/
 │   │   ├── ConversionController.ts
 │   │   └── ConversionRequestValidator.ts  # リクエストボディの検証
 │   ├── middleware/          # Expressミドルウェア
-│   │   └── errorHandler.ts
+│   │   ├── errorHandler.ts
+│   │   ├── requireJson.ts   # application/json 以外を 415 で拒否
+│   │   └── securityHeaders.ts  # CSP 等のセキュリティヘッダ
 │   ├── services/            # ビジネスロジック
 │   │   └── PandocSocketClientImpl.ts
 │   ├── types/               # TypeScript型定義
@@ -167,9 +171,12 @@ app-server/
 │   │   ├── ConversionRequestValidator.test.ts
 │   │   ├── PandocSocketClientImpl.test.ts
 │   │   ├── PandocSocketClientImpl.real.test.ts
-│   │   └── errorHandler.test.ts
+│   │   ├── errorHandler.test.ts
+│   │   ├── shutdown.test.ts
+│   │   └── shutdown.real.test.ts  # 停止処理の確認（ループバックで listen）
 │   ├── app.ts               # Express アプリの組み立て（createApp。listen はしない）
 │   ├── config.ts            # コマンドライン引数・環境変数の解析（parseArgs）
+│   ├── shutdown.ts          # SIGINT / SIGTERM 受信時の停止処理
 │   └── index.ts             # アプリケーションエントリーポイント（main）
 ├── web-simple/              # Webアプリケーション
 │   ├── index.html          # メインHTML
