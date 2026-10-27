@@ -6,6 +6,8 @@ import * as net from 'net';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { UnixSocketServer } from '../UnixSocketServer';
+import { FsSocketPathOperations } from '../SocketPathPreparer';
+import { SocketStartError } from '../types';
 import { SilentLogger } from './stubs';
 
 const tmpDir = path.resolve(__dirname, '../../../tmp');
@@ -203,6 +205,13 @@ describe('UnixSocketServer.stop (real socket)', () => {
   );
 });
 
+/** chmod だけが失敗する、実ファイルシステムを使う SocketPathOperations */
+class FailingChmodOperations extends FsSocketPathOperations {
+  chmod(): void {
+    throw new Error('EPERM: simulated chmod failure');
+  }
+}
+
 describe('UnixSocketServer.start socket file handling (real socket)', () => {
   const guardSocketPath = path.join(tmpDir, `pr-guard-${process.pid}.sock`);
 
@@ -222,6 +231,46 @@ describe('UnixSocketServer.start socket file handling (real socket)', () => {
     } finally {
       await server.stop();
     }
+  });
+
+  it(
+    'stops listening and removes the socket if chmod fails',
+    { timeout: 5000 },
+    async () => {
+      // 以前は chmod に失敗しても待ち受けを続け、umask のままのパーミッションで接続を受け付けていた
+      fs.mkdirSync(tmpDir, { recursive: true });
+      clearPath();
+      const server = new UnixSocketServer(guardSocketPath, new SilentLogger(), {
+        pathOperations: new FailingChmodOperations(),
+      });
+      await assert.rejects(
+        server.start(async (line) => line),
+        (error) => error instanceof SocketStartError
+      );
+      await server.stop();
+      assert.strictEqual(fs.existsSync(guardSocketPath), false);
+      await assert.rejects(
+        new Promise((resolve, reject) => {
+          const client = net.createConnection(guardSocketPath, () => {
+            client.destroy();
+            resolve(undefined);
+          });
+          client.on('error', reject);
+        })
+      );
+    }
+  );
+
+  it('reports a listen failure as SocketStartError', async () => {
+    const server = new UnixSocketServer(
+      path.join(tmpDir, 'no-such-dir', 'x.sock'),
+      new SilentLogger()
+    );
+    await assert.rejects(
+      server.start(async (line) => line),
+      (error) => error instanceof SocketStartError
+    );
+    await server.stop();
   });
 
   it('refuses to start and keeps a regular file at the socket path', async () => {

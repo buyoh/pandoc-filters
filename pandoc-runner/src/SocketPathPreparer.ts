@@ -15,7 +15,7 @@ export type SocketProbeResult =
   | { kind: 'stale' }
   | { kind: 'unknown'; message: string };
 
-/** ソケットパスの検査・削除を行う操作。通常は FsSocketPathOperations、テストではスタブを渡す */
+/** ソケットパスの検査・削除・パーミッション変更を行う操作。通常は FsSocketPathOperations、テストではスタブを渡す */
 export interface SocketPathOperations {
   /** パスに存在するものの種類を返す（シンボリックリンクは辿らない） */
   kindOf(socketPath: string): SocketPathKind;
@@ -23,6 +23,8 @@ export interface SocketPathOperations {
   probe(socketPath: string): Promise<SocketProbeResult>;
   /** パスを削除する。失敗した場合は例外を投げる */
   remove(socketPath: string): void;
+  /** パーミッションを変更する。失敗した場合は例外を投げる */
+  chmod(socketPath: string, mode: number): void;
 }
 
 /** prepareSocketPath の結果。listen できない状態はドメイン上想定される失敗として戻り値で返す */
@@ -130,5 +132,9 @@ export class FsSocketPathOperations implements SocketPathOperations {
         throw error;
       }
     }
+  }
+
+  chmod(socketPath: string, mode: number): void {
+    fs.chmodSync(socketPath, mode);
   }
 }

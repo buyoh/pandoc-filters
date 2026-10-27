@@ -33,7 +33,8 @@ export function installShutdownHandlers(
   server: ClosableServer,
   shutdownTimeoutMs: number = DEFAULT_SHUTDOWN_TIMEOUT_MS
 ): void {
-  // 停止中に別のシグナル（SIGINT の後の SIGTERM 等）を受けても、待機を打ち切らずに無視する
+  // 停止中に別のシグナル（SIGINT の後の SIGTERM 等）を受けても、待機を打ち切らずに無視する。
+  // 同じシグナルの 2 回目（Ctrl+C の 2 回押し等）は once で登録済みのため Node の既定動作で即時終了する（強制終了の手段として残す）
   // （以前は 2 回目の close() が ERR_SERVER_NOT_RUNNING となり、処理中に exit 1 していた）
   let stopping = false;
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {

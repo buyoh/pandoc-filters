@@ -23,7 +23,8 @@ export function installSignalHandlers(
   // 停止処理が二重に走っていた。プロセス全体に関わるシグナル処理は composition root からのみ、この関数で登録する。
   // また以前は stop() の完了を待たずに exit しており、処理中のリクエストが打ち切られ、停止ログも出力されなかった。
   // stop() の完了を待ってから終了する（stop() は接続の待ち時間に上限があるため、接続が残っていても終了する）。
-  // 停止中に別のシグナル（SIGINT の後の SIGTERM 等）を受けても、待機を打ち切らずに無視する
+  // 停止中に別のシグナル（SIGINT の後の SIGTERM 等）を受けても、待機を打ち切らずに無視する。
+  // 同じシグナルの 2 回目（Ctrl+C の 2 回押し等）は once で登録済みのため Node の既定動作で即時終了する（強制終了の手段として残す）
   let stopping = false;
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     target.once(signal, () => {

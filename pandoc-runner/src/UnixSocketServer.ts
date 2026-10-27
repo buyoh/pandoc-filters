@@ -1,8 +1,7 @@
 import * as net from 'net';
 import * as fs from 'fs';
-import { Logger, SocketServer } from './types';
+import { Logger, SocketServer, SocketStartError } from './types';
 import { ClientConnection } from './ClientConnection';
-import { SocketStartError } from './types';
 import {
   FsSocketPathOperations,
   prepareSocketPath,
@@ -24,7 +23,7 @@ export interface UnixSocketServerOptions {
   shutdownTimeoutMs?: number;
   /** listen 後に chmod するパーミッション。省略時は DEFAULT_SOCKET_MODE */
   socketMode?: number;
-  /** 起動前のソケットパス検査・削除に使う操作。省略時は FsSocketPathOperations（テストでスタブに差し替える用） */
+  /** 起動前のソケットパス検査・削除と listen 後の chmod に使う操作。省略時は FsSocketPathOperations（テストでスタブに差し替える用） */
   pathOperations?: SocketPathOperations;
 }
 
@@ -83,19 +82,28 @@ export class UnixSocketServer implements SocketServer {
 
       this.server.on('error', (error: Error) => {
         this.logger.error(`Server error: ${error.message}`);
-        reject(error);
+        // listen 前のエラー（EACCES 等）は起動失敗として伝える。listen 後は reject しても無視される
+        reject(
+          new SocketStartError(
+            `failed to listen on ${this.socketPath}: ${error.message}`
+          )
+        );
       });
 
       this.server.listen(this.socketPath, () => {
         // 以前はパーミッションを umask 任せにしており、umask によっては同一ホストの他ユーザが接続できた。
         // listen から chmod までのわずかな間は umask に従う
         try {
-          fs.chmodSync(this.socketPath, this.socketMode);
+          this.pathOperations.chmod(this.socketPath, this.socketMode);
         } catch (error) {
           // パーミッションを絞れないまま待ち受けを続けないよう、閉じてから失敗を伝える
           this.running = false;
           this.server!.close();
-          reject(error);
+          reject(
+            new SocketStartError(
+              `failed to set mode of ${this.socketPath}: ${error}`
+            )
+          );
           return;
         }
         this.logger.info(

@@ -33,6 +33,8 @@ class StubPathOperations implements SocketPathOperations {
     }
     this.removed.push(socketPath);
   }
+
+  chmod(): void {}
 }
 
 const PATH = '/run/test.sock';
