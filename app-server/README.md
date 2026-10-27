@@ -39,6 +39,15 @@ pnpm app-server:dev:watch
 
 サーバー起動後、ブラウザで `http://localhost:3000` にアクセスしてWebアプリケーションを使用できます。
 
+## Docker イメージ
+
+ルートの `pnpm-lock.yaml` で依存を固定するため、リポジトリルートをビルドコンテキストとしてビルドします。BuildKit（Docker 23 以降の既定）が必要です。
+
+```bash
+# リポジトリルートで実行
+docker build -f app-server/Dockerfile -t app-server .
+```
+
 ## コマンドライン引数
 
 - `--pandoc-socket-path <path>`: pandoc-runnerのUnixソケットパス (デフォルト: /tmp/pandoc-runner.sock)
