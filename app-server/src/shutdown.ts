@@ -1,6 +1,12 @@
 /** 停止時に処理中のリクエストの完了を待つ既定の時間。docker stop の既定の猶予（10 秒）より短くする */
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 5000;
 
+/**
+ * 停止中にアイドル接続を閉じる間隔。処理中だった keep-alive 接続は応答後にアイドルになるが、
+ * close() はそれを閉じないため、定期的に閉じて close() を完了させる
+ */
+export const IDLE_CLOSE_INTERVAL_MS = 50;
+
 /** シグナル登録・プロセス終了を行う対象。通常は process、テストではスタブを渡す */
 export interface SignalTarget {
   once(signal: NodeJS.Signals, listener: () => void): unknown;
@@ -27,8 +33,16 @@ export function installShutdownHandlers(
   server: ClosableServer,
   shutdownTimeoutMs: number = DEFAULT_SHUTDOWN_TIMEOUT_MS
 ): void {
+  // 停止中に別のシグナル（SIGINT の後の SIGTERM 等）を受けても、待機を打ち切らずに無視する
+  // （以前は 2 回目の close() が ERR_SERVER_NOT_RUNNING となり、処理中に exit 1 していた）
+  let stopping = false;
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     target.once(signal, () => {
+      if (stopping) {
+        console.log(`Received ${signal} signal; already shutting down`);
+        return;
+      }
+      stopping = true;
       console.log(`Received ${signal} signal, shutting down`);
       const timer = setTimeout(() => {
         console.warn(
@@ -36,8 +50,15 @@ export function installShutdownHandlers(
         );
         server.closeAllConnections();
       }, shutdownTimeoutMs);
+      // バグ修正: 以前はシグナル受信時に 1 回だけアイドル接続を閉じており、処理中だった keep-alive 接続が
+      // 応答後もアイドルのまま残るため、close() は常にタイムアウトまで完了しなかった。完了まで定期的に閉じる
+      const idleCloser = setInterval(
+        () => server.closeIdleConnections(),
+        IDLE_CLOSE_INTERVAL_MS
+      );
       server.close((error) => {
         clearTimeout(timer);
+        clearInterval(idleCloser);
         if (error) {
           console.error(`Failed to stop server: ${error.message}`);
           target.exit(1);
@@ -46,7 +67,6 @@ export function installShutdownHandlers(
         console.log('Server stopped');
         target.exit(0);
       });
-      // keep-alive で待機中の接続は close() の完了を妨げるため、処理中でないものは即座に閉じる
       server.closeIdleConnections();
     });
   }

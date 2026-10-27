@@ -51,12 +51,16 @@ describe('installShutdownHandlers (real HTTP server)', () => {
 
       const response = fetch(`${baseUrl}/`);
       await requestReceived;
+      const startMs = Date.now();
       target.emit('SIGTERM');
 
       const res = await response;
       assert.strictEqual(await res.text(), 'done');
       assert.strictEqual(await target.exited, 0);
       assert.strictEqual(server.listening, false);
+      // 以前は応答後にアイドルになった keep-alive 接続が閉じられず、常にタイムアウト（2000ms）まで待っていた
+      const elapsedMs = Date.now() - startMs;
+      assert.ok(elapsedMs < 1000, `took ${elapsedMs}ms`);
     }
   );
 

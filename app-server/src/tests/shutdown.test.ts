@@ -82,11 +82,7 @@ describe('installShutdownHandlers', () => {
     target.emit('SIGINT');
     await sleep(50);
 
-    assert.deepStrictEqual(server.calls, [
-      'close',
-      'closeIdleConnections',
-      'closeAllConnections',
-    ]);
+    assert.ok(server.calls.includes('closeAllConnections'));
     server.finishClose();
     assert.deepStrictEqual(target.exitCodes, [0]);
   });
@@ -101,6 +97,39 @@ describe('installShutdownHandlers', () => {
     await sleep(50);
 
     assert.ok(!server.calls.includes('closeAllConnections'));
+  });
+
+  it('ignores a second, different signal while shutting down', () => {
+    const target = new StubSignalTarget();
+    const server = new StubServer();
+    installShutdownHandlers(target, server, 10_000);
+
+    target.emit('SIGINT');
+    target.emit('SIGTERM');
+    assert.strictEqual(server.calls.filter((c) => c === 'close').length, 1);
+
+    server.finishClose();
+    assert.deepStrictEqual(target.exitCodes, [0]);
+  });
+
+  it('keeps closing idle connections until close completes', async () => {
+    const target = new StubSignalTarget();
+    const server = new StubServer();
+    installShutdownHandlers(target, server, 10_000);
+
+    target.emit('SIGTERM');
+    await sleep(200);
+    const idleCloses = server.calls.filter(
+      (c) => c === 'closeIdleConnections'
+    ).length;
+    assert.ok(idleCloses >= 2, `closeIdleConnections x${idleCloses}`);
+
+    server.finishClose();
+    await sleep(100);
+    assert.strictEqual(
+      server.calls.filter((c) => c === 'closeIdleConnections').length,
+      idleCloses
+    );
   });
 
   it('exits with 1 if close fails', () => {
