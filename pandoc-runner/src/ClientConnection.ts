@@ -75,7 +75,8 @@ export class ClientConnection {
 
     let response: string;
     try {
-      this.logger.debug(`Received request: ${requestLine}`);
+      // 本文（markdown・変換結果）は機密情報を含み得るため、debug ログにも長さのみ出力する
+      this.logger.debug(`Received request (${requestLine.length} chars)`);
       response = await this.requestHandler(requestLine);
     } catch (error) {
       this.logger.error(`Error handling request: ${error}`);
@@ -87,7 +88,7 @@ export class ClientConnection {
       return;
     }
     this.socket.write(response + '\n');
-    this.logger.debug(`Sent response: ${response}`);
+    this.logger.debug(`Sent response (${response.length} chars)`);
   }
 
   private isClosed(): boolean {

@@ -4,6 +4,7 @@ import assert from 'node:assert';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
+import { spawn } from 'child_process';
 import { UnixSocketServer } from '../UnixSocketServer';
 import { SilentLogger } from './stubs';
 
@@ -138,6 +139,107 @@ describe('UnixSocketServer.stop (real socket)', () => {
       await clientClosed;
 
       assert.strictEqual(data, 'done:req\n');
+    }
+  );
+});
+
+describe('UnixSocketServer.start socket file handling (real socket)', () => {
+  const guardSocketPath = path.join(tmpDir, `pr-guard-${process.pid}.sock`);
+
+  /** テストが ./tmp に作ったファイルを消してパスを空ける */
+  function clearPath(): void {
+    fs.rmSync(guardSocketPath, { force: true });
+  }
+
+  it('sets the socket file mode to 0660', { timeout: 5000 }, async () => {
+    // 以前はパーミッションを umask 任せにしていた
+    fs.mkdirSync(tmpDir, { recursive: true });
+    clearPath();
+    const server = new UnixSocketServer(guardSocketPath, new SilentLogger());
+    await server.start(async (line) => line);
+    try {
+      assert.strictEqual(fs.statSync(guardSocketPath).mode & 0o777, 0o660);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  it('refuses to start and keeps a regular file at the socket path', async () => {
+    // 以前は種類を確認せずに unlink していた
+    fs.mkdirSync(tmpDir, { recursive: true });
+    clearPath();
+    fs.writeFileSync(guardSocketPath, 'not a socket');
+    const server = new UnixSocketServer(guardSocketPath, new SilentLogger());
+    try {
+      await assert.rejects(
+        server.start(async (line) => line),
+        /not a socket/
+      );
+      await server.stop();
+      assert.strictEqual(
+        fs.readFileSync(guardSocketPath, 'utf8'),
+        'not a socket'
+      );
+    } finally {
+      clearPath();
+    }
+  });
+
+  it(
+    'refuses to start while another server is listening, leaving it working',
+    { timeout: 5000 },
+    async () => {
+      fs.mkdirSync(tmpDir, { recursive: true });
+      clearPath();
+      const first = new UnixSocketServer(guardSocketPath, new SilentLogger());
+      await first.start(async (line) => `first:${line}`);
+      try {
+        const second = new UnixSocketServer(
+          guardSocketPath,
+          new SilentLogger()
+        );
+        await assert.rejects(
+          second.start(async (line) => line),
+          /already listening/
+        );
+        await second.stop();
+
+        // 以前は 2 つ目の起動で稼働中のソケットが削除され、1 つ目に接続できなくなっていた
+        const response = await new Promise<string>((resolve, reject) => {
+          const client = net.createConnection(guardSocketPath);
+          client.setEncoding('utf8');
+          client.on('data', (data: string) => {
+            client.destroy();
+            resolve(data);
+          });
+          client.on('error', reject);
+          client.write('ping\n');
+        });
+        assert.strictEqual(response, 'first:ping\n');
+      } finally {
+        await first.stop();
+      }
+    }
+  );
+
+  it(
+    'removes a stale socket left by a killed process and starts',
+    { timeout: 5000 },
+    async () => {
+      fs.mkdirSync(tmpDir, { recursive: true });
+      clearPath();
+      // 別プロセスで listen した直後に SIGKILL し、接続できないソケットファイルを残す
+      const child = spawn(process.execPath, [
+        '-e',
+        `require('net').createServer().listen(${JSON.stringify(guardSocketPath)}, () => process.kill(process.pid, 'SIGKILL'))`,
+      ]);
+      await new Promise((resolve) => child.on('exit', resolve));
+      assert.ok(fs.lstatSync(guardSocketPath).isSocket());
+
+      const server = new UnixSocketServer(guardSocketPath, new SilentLogger());
+      await server.start(async (line) => line);
+      await server.stop();
+      assert.strictEqual(fs.existsSync(guardSocketPath), false);
     }
   );
 });

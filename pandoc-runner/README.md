@@ -43,6 +43,12 @@ pnpm dev
 The server exits at startup if the filter file does not exist or pandoc is not available.
 With `docker-compose.yml` (which bind-mounts the repository), run `pnpm build` and `pnpm pandoc-runner:build` at the repository root beforehand; otherwise the `pandoc-runner` container keeps restarting.
 
+### Socket file
+
+- After listening, the socket file is set to mode `0660`: only processes with the same user or group as the runner can connect. Run the client (app-server) with the same UID/GID, or a shared group.
+- At startup, an existing path is removed only if it is a stale socket (nothing accepts connections on it). The server refuses to start if the path is a non-socket file, a socket another server is listening on, or a socket whose state cannot be determined.
+- With `--verbose`, requests and responses are logged by length only; their content is never logged.
+
 On SIGINT / SIGTERM the server stops accepting connections, waits up to 5 seconds for in-flight requests, destroys any remaining connections, removes the socket file and exits.
 
 ## API

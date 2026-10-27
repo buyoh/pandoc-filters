@@ -1,9 +1,24 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { ClientConnection } from '../ClientConnection';
-import { SilentLogger, StubSocket, waitFor } from './stubs';
+import { RecordingLogger, SilentLogger, StubSocket, waitFor } from './stubs';
 
 describe('ClientConnection', () => {
+  it('logs only the lengths of requests and responses, not their content', async () => {
+    // 以前は debug ログにリクエスト・レスポンスの本文全体を出力しており、機密性のある markdown が漏れ得た
+    const socket = new StubSocket();
+    const logger = new RecordingLogger();
+    new ClientConnection(socket, async () => 'RESPONSE-SECRET', logger);
+
+    socket.receive(Buffer.from('REQUEST-SECRET\n'));
+    await waitFor(() => socket.writtenLines().length === 1);
+
+    const logs = logger.messages.join('\n');
+    assert.doesNotMatch(logs, /SECRET/);
+    assert.match(logs, /Received request \(14 chars\)/);
+    assert.match(logs, /Sent response \(15 chars\)/);
+  });
+
   it('decodes a multibyte character split across chunks', async () => {
     const socket = new StubSocket();
     const received: string[] = [];

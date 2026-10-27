@@ -2,14 +2,29 @@ import * as net from 'net';
 import * as fs from 'fs';
 import { Logger, SocketServer } from './types';
 import { ClientConnection } from './ClientConnection';
+import {
+  FsSocketPathOperations,
+  prepareSocketPath,
+  SocketPathOperations,
+} from './SocketPathPreparer';
 
 /** stop() で処理中の接続の終了を待つ既定の時間。docker stop の既定の猶予（10 秒）より短くする */
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 5000;
+
+/**
+ * listen 後に設定するソケットファイルのパーミッション。所有者とグループのみ接続できる。
+ * runner と同じ UID / GID のプロセス（docker-compose.yml では app-server）から接続する想定
+ */
+export const DEFAULT_SOCKET_MODE = 0o660;
 
 /** UnixSocketServer の動作設定 */
 export interface UnixSocketServerOptions {
   /** stop() で接続の終了を待つ時間。経過後に残った接続は破棄する。省略時は DEFAULT_SHUTDOWN_TIMEOUT_MS */
   shutdownTimeoutMs?: number;
+  /** listen 後に chmod するパーミッション。省略時は DEFAULT_SOCKET_MODE */
+  socketMode?: number;
+  /** 起動前のソケットパス検査・削除に使う操作。省略時は FsSocketPathOperations（テストでスタブに差し替える用） */
+  pathOperations?: SocketPathOperations;
 }
 
 /**
@@ -20,7 +35,14 @@ export class UnixSocketServer implements SocketServer {
   private running = false;
   /** 接続中のクライアント。stop() でタイムアウト後に破棄するために保持する */
   private connections = new Set<net.Socket>();
+  /**
+   * ソケットファイルをこのインスタンスが作成したか。listen に成功するまで false で、
+   * 起動に失敗した場合に既存の（他プロセスの）ファイルを stop() で削除しないために使う
+   */
+  private ownsSocketFile = false;
   private shutdownTimeoutMs: number;
+  private socketMode: number;
+  private pathOperations: SocketPathOperations;
 
   constructor(
     private socketPath: string,
@@ -29,18 +51,27 @@ export class UnixSocketServer implements SocketServer {
   ) {
     this.shutdownTimeoutMs =
       options.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS;
+    this.socketMode = options.socketMode ?? DEFAULT_SOCKET_MODE;
+    this.pathOperations =
+      options.pathOperations ?? new FsSocketPathOperations();
   }
 
   /**
-   * サーバーを開始する
+   * サーバーを開始する。ソケットパスにソケット以外のファイルや稼働中のソケットがある場合は reject する
    * @param requestHandler リクエストを処理するコールバック関数
    */
   async start(
     requestHandler: (requestLine: string) => Promise<string>
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.cleanupSocket();
+    const prepared = await prepareSocketPath(
+      this.socketPath,
+      this.pathOperations
+    );
+    if (!prepared.ok) {
+      throw new Error(prepared.message);
+    }
 
+    return new Promise((resolve, reject) => {
       // allowHalfOpen: 既定（false）ではクライアントが送信後に end()（FIN）すると
       // サーバ側の書き込みも閉じられ、応答を返せない。ClientConnection が応答後に閉じる
       this.server = net.createServer({ allowHalfOpen: true });
@@ -58,7 +89,18 @@ export class UnixSocketServer implements SocketServer {
       });
 
       this.server.listen(this.socketPath, () => {
-        this.logger.info(`UnixSocket server started at ${this.socketPath}`);
+        this.ownsSocketFile = true;
+        // 以前はパーミッションを umask 任せにしており、umask によっては同一ホストの他ユーザが接続できた。
+        // listen から chmod までのわずかな間は umask に従う
+        try {
+          fs.chmodSync(this.socketPath, this.socketMode);
+        } catch (error) {
+          reject(error);
+          return;
+        }
+        this.logger.info(
+          `UnixSocket server started at ${this.socketPath} (mode ${this.socketMode.toString(8)})`
+        );
         resolve();
       });
     });
@@ -98,9 +140,13 @@ export class UnixSocketServer implements SocketServer {
   }
 
   /**
-   * ソケットファイルをクリーンアップする
+   * このインスタンスが作成したソケットファイルを削除する
    */
   private cleanupSocket(): void {
+    if (!this.ownsSocketFile) {
+      return;
+    }
+    this.ownsSocketFile = false;
     try {
       if (fs.existsSync(this.socketPath)) {
         fs.unlinkSync(this.socketPath);

@@ -54,6 +54,24 @@ export class SilentLogger implements Logger {
   error(): void {}
 }
 
+/** 出力されたログを記録するロガー */
+export class RecordingLogger implements Logger {
+  messages: string[] = [];
+
+  info(message: string): void {
+    this.messages.push(message);
+  }
+  debug(message: string): void {
+    this.messages.push(message);
+  }
+  warn(message: string): void {
+    this.messages.push(message);
+  }
+  error(message: string): void {
+    this.messages.push(message);
+  }
+}
+
 /** コンストラクタで指定した結果を返す MarkdownConverter のスタブ */
 export class StubMarkdownConverter implements MarkdownConverter {
   /** 受け取った入力の記録 */
