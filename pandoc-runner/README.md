@@ -71,7 +71,10 @@ Requests and responses are newline-terminated JSON lines (UTF-8). For the full p
 ```bash
 pnpm test
 pnpm test:watch
+pnpm typecheck   # type-check src/ including src/tests (tsconfig.test.json)
 ```
+
+`tsx --test` does not type-check, and the build (`tsconfig.json`) excludes `src/tests`, so run `pnpm typecheck` to catch type errors in tests.
 
 ## Build
 

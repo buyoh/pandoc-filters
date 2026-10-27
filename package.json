@@ -16,6 +16,7 @@
     "app-server:test:watch": "pnpm --filter app-server test:watch",
     "pandoc-runner:build": "pnpm --filter pandoc-runner build",
     "pandoc-runner:test": "pnpm --filter pandoc-runner test",
+    "pandoc-runner:typecheck": "pnpm --filter pandoc-runner typecheck",
     "pandoc-runner:start": "cd pandoc-runner && node dist/index.js"
   },
   "dependencies": {

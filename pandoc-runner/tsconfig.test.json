@@ -1,0 +1,7 @@
+{
+  // テストを含めた型検査用。tsx --test は型検査せず、ビルド用の tsconfig.json は src/tests を除外するため
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
