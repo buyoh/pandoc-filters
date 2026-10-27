@@ -1,0 +1,9 @@
+*
+!package.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!app-server/package.json
+!app-server/tsconfig.json
+!app-server/src
+!app-server/web-simple
+!pandoc-runner/package.json
