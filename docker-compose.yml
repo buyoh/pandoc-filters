@@ -1,14 +1,21 @@
+# 開発・動作確認用の構成。ホストでビルドした dist/ を、リポジトリごと読み取り専用でマウントして実行する
+# （事前にリポジトリルートで pnpm build と pnpm pandoc-runner:build を実行しておく）。
+# app-server はループバックにのみ公開する。外部に公開する場合はリバースプロキシ（TLS 終端）を経由すること
 services:
   pandoc-runner:
     image: node:20
     container_name: pandoc-runner
+    # node を PID 1 にしない（シグナルの転送・ゾンビプロセスの回収を tini に任せる）
+    init: true
+    # イメージの node ユーザー。外部入力を pandoc に渡すため root で動かさない
+    user: "1000:1000"
     working_dir: /opt/pandoc-filters/pandoc-runner
     volumes:
-      - .:/opt/pandoc-filters
+      - .:/opt/pandoc-filters:ro
       - common:/var/opt/common
-      - ./third_party/pandoc:/opt/pandoc
+      - ./third_party/pandoc:/opt/pandoc:ro
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PF_PANDOC_PATH: /opt/pandoc/bin/pandoc
     command: node dist/index.js --socket /var/opt/common/pandoc-runner.sock
     restart: unless-stopped
@@ -16,18 +23,28 @@ services:
   app-server:
     image: node:20
     container_name: app-server
+    init: true
+    # runner のソケット（パーミッション 0660）に接続するため、runner と同じ UID / GID で動かす
+    user: "1000:1000"
     working_dir: /opt/pandoc-filters/app-server
     volumes:
-      - .:/opt/pandoc-filters
+      - .:/opt/pandoc-filters:ro
       - common:/var/opt/common
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
     command: node dist/index.js --pandoc-socket-path /var/opt/common/pandoc-runner.sock
     depends_on:
       - pandoc-runner
     restart: unless-stopped
 
 volumes:
+  # ソケット共有用。named volume の既定ではマウントポイントが root 所有になり、非 root の runner が
+  # ソケットを作成できないため、所有者を指定した tmpfs にする（再起動時に古いソケットも残らない）
   common:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "uid=1000,gid=1000,mode=0770"
