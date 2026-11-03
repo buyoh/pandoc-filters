@@ -1,5 +1,6 @@
 import { Logger } from './types';
 
+/** ログレベル。DefaultLogger は指定レベル以上（debug < info < warn < error）のみ出力する */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /** 指定レベル以上のメッセージをコンソールに出力するロガー */

@@ -4,6 +4,7 @@ import { DefaultFilterSelector, PandocConverter } from '../PandocConverter';
 import { FilterSelector } from '../types';
 import { StubCommandExecutor } from './stubs';
 
+/** 常にフィルター無し（null）を返す FilterSelector のスタブ */
 class NoFilterSelector implements FilterSelector {
   getFilterPath(): string | null {
     return null;

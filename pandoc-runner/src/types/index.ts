@@ -75,6 +75,7 @@ export interface CommandExecutor {
   execute(
     command: string,
     args: string[],
+    /** 実行オプション。省略した場合は {} と同じ（stdin に何も書き込まない） */
     options?: {
       /** 標準入力に書き込む文字列。undefined の場合は何も書き込まず stdin を閉じる */
       stdin?: string;

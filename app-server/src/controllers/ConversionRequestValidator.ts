@@ -31,6 +31,9 @@ const FORMAT_UNSUPPORTED =
 /**
  * 変換 API のリクエストボディ（req.body。任意の値）を検証する
  *
+ * from_format / to_format は省略可能（undefined の場合は DEFAULT_FROM_FORMAT / DEFAULT_TO_FORMAT を補完）。
+ * null を含む文字列以外の値は不正として拒否する。空文字は既定値を補完せず、非対応の形式として拒否する
+ *
  * body がオブジェクトでない場合の検査は、Express の外から呼ばれた場合への防御。
  * express.json() を通った req.body は常にオブジェクトになる
  */

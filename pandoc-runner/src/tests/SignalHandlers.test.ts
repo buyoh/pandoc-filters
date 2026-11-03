@@ -21,6 +21,7 @@ class StubSignalTarget implements SignalTarget {
   }
 }
 
+/** stop() の呼び出し回数を記録し、即座に完了するサーバー */
 class CountingServer implements StoppableServer {
   stopCalls = 0;
 

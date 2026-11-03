@@ -6,8 +6,11 @@ function clientErrorStatus(err: unknown): number | undefined {
     return undefined;
   }
   // body-parser 等（http-errors）は 4xx の場合 err.status / err.statusCode を設定する
+  // 任意のエラーを受け取るため、どちらのプロパティも存在しない（undefined）場合がある
   const { status, statusCode } = err as {
+    /** http-errors が設定する HTTP ステータス。設定されていないエラーでは存在しない */
     status?: unknown;
+    /** status の別名。設定されていないエラーでは存在しない */
     statusCode?: unknown;
   };
   const value = typeof status === 'number' ? status : statusCode;

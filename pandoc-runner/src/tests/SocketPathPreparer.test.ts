@@ -15,6 +15,7 @@ class StubPathOperations implements SocketPathOperations {
   constructor(
     private kind: SocketPathKind,
     private probeResult: SocketProbeResult = { kind: 'stale' },
+    /** remove() で投げる例外。省略した場合 remove() は成功する */
     private removeError?: Error
   ) {}
 

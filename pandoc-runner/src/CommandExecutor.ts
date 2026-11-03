@@ -2,14 +2,14 @@ import { spawn } from 'child_process';
 import { CommandExecutor, CommandResult } from './types';
 
 /**
- * 外部コマンドの実行を抽象化するクラス
+ * child_process.spawn で外部コマンドを実行する CommandExecutor の実装（シェルを経由しない）
  */
 export class DefaultCommandExecutor implements CommandExecutor {
   /**
    * コマンドを実行する。コマンドを起動できない場合（ENOENT 等）は reject する
    * @param command 実行するコマンド
    * @param args コマンドの引数
-   * @param options オプション（stdin等）
+   * @param options オプション。options.stdin が undefined の場合は何も書き込まずに stdin を閉じる（EOF のみ送る）
    */
   async execute(
     command: string,

@@ -10,8 +10,11 @@ const SNAPSHOTS_DIR = join(PROJECT_ROOT, 'tests/snapshots');
 const MANIFEST_PATH = join(SNAPSHOTS_DIR, 'manifest.json');
 const FILTER_PATH = join(PROJECT_ROOT, 'dist/src/ToRedmine.js');
 
+/** manifest.json の 1 エントリ。入力・期待出力はスナップショットディレクトリ内のファイル名 */
 interface TestCase {
+  /** 入力ファイル名（tests/snapshots からの相対パス） */
   input: string;
+  /** 期待出力ファイル名（tests/snapshots からの相対パス） */
   output: string;
   input_type: string;
   output_type: string;

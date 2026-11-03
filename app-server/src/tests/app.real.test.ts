@@ -90,6 +90,7 @@ describe('createApp (HTTP routing)', () => {
 
   it('rejects non-JSON bodies with 415 without calling the client', async () => {
     // 以前は urlencoded パーサが有効で、他サイトのフォームからプリフライト無しで変換 API を叩けた（code-review 08 (2)）
+    // contentType が undefined の場合は Content-Type ヘッダを送らず、body が undefined の場合はボディ無しで送る
     const cases: { contentType?: string; body?: string }[] = [
       {
         contentType: 'application/x-www-form-urlencoded',
